@@ -1,0 +1,30 @@
+#3.3 Matplotlib
+import numpy as np
+import matplotlib.pyplot as plt
+import math
+from mpl_toolkits import mplot3d
+fig= plt.figure()
+t=np.linspace(0,2*np.pi,1000)
+T = 1
+
+y=np.sin(2*np.pi*t/T)
+plt.plot (t,y)
+plt.xlabel('radians')
+plt.ylabel('amplitude')
+plt.title('Sine function')
+
+fig= plt.figure()
+ax = plt.axes(projection ='3d')
+x= np.linspace(-10,10,100)
+y=np.linspace(-10,10,100)
+
+X, Y = np.meshgrid(x,y)
+intermediate =(X**2) + (Y**2)
+Z= np.sin(np.sqrt(intermediate))
+#print(np.shape(np.sqrt(intermediate)))
+ax.plot_surface(X,Y,Z)
+plt.autoscale()
+plt.xlabel('x')
+plt.ylabel('y')
+ax.set_zlabel('z label')
+plt.title('3D plot of sin(sqrt(x^2+y^2))')
