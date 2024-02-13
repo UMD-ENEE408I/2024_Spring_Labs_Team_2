@@ -1,0 +1,49 @@
+# Tutorial 3, Part A
+
+#import libraries
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.io import wavfile
+from scipy.io.wavfile import write
+
+# function to downsample data
+# downsample by a factor of 6 y(m)=x(M*m)=x(6*m) to get audiofile to be 8kHz
+# current sampling period T is 1/48000 s 
+# new sampling period T will be 6*(1/48000) s
+# take every 6 data points of the data vector
+# 85248 is the number of elements in the data that needs to be reduced to 14208
+def downsample(data):
+    downsampled_data = []
+    for i in range(0, len(data), 6):
+
+                    downsampled_data.append(data[i])
+               
+    length_of_downsampled_data = len(downsampled_data)
+    print("length of downsampled data", length_of_downsampled_data)
+    return downsampled_data
+# read wave file and save sample rate and data
+samplerate, data = wavfile.read('human_voice.wav')
+
+print('sample rate {} Hz' .format(samplerate))
+length_of_data = len(data)
+print("length of data {}" .format(length_of_data))
+
+# call downsample data function 
+downsampled_data= downsample(data)
+
+fig, (ax1, ax2) = plt.subplots(2, 1)
+ax1.plot(data)
+ax2.plot(downsampled_data)
+ax2.set_ylabel('Amplitude')
+ax2.set_xlabel('Samples')
+ax1.set_ylabel('Amplitude')
+ax1.set_xlabel('Samples')
+ax1.title.set_text('Original (48000Hz)')
+ax2.title.set_text('Reduced (8000Hz)')
+#convert downsampled values into array
+downsampled_data = np.array(downsampled_data, dtype=np.int16)
+#write downsampled wavefile
+samplerate_down = 8000
+write("downsampled.wav", samplerate_down,downsampled_data)
+fig.tight_layout()
+plt.show()
