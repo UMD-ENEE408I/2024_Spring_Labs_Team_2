@@ -17,7 +17,7 @@ Y = scp.fftpack.fft(data)
 plt.plot(frq,abs(Y),'r')
 plt.show()
 
-#Applying Simple low pass filter (Zeroing out )
+#Applying Simple low pass filter (Zeroing out Frequencies greater than human vocal range )
 Yfiltered = Y
 Yfiltered[15000:-1] = 0
 filtereddata = scp.fftpack.ifft(Yfiltered)
