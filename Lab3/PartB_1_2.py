@@ -13,3 +13,11 @@ fs, m3_signal = scp.io.wavfile.read('M3.wav')
 print("RMS value for M1.wav:", np.sqrt(np.mean((np.square(np.int64(m1_signal))))))
 print("RMS value for M2.wav:", np.sqrt(np.mean((np.square(np.int64(m2_signal))))))
 print("RMS value for M3.wav:", np.sqrt(np.mean((np.square(np.int64(m3_signal))))))
+
+convolved = scp.signal.convolve(m1_signal,m2_signal)
+maxindex = np.argmax(convolved)
+#Index of Maximum Value
+print(maxindex)
+#Time Delay(Index/sampling rate)
+tdelay1 = maxindex/sr1)
+print(tdelay1)
