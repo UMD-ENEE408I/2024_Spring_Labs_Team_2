@@ -1,0 +1,112 @@
+## Tutorial3 Part C, Anne, Davy, Kenney
+## purpose: import a signal and filter out noise
+
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.fftpack import fft,fftfreq,ifft
+from playsound import playsound
+from scipy import signal
+from scipy.io import wavfile
+from scipy.io.wavfile import write
+
+Fs, data = wavfile.read('Cafe_with_noise.wav') #wav file returns the sampled frequency (inherent to that wave file), and the data vector
+data=(np.array(data, dtype='int64')) #cast data as int64
+#playsound('Cafe_with_noise.wav')
+
+#create time and frequency vectors for plotting
+print('sample rate1 {} Hz' .format(Fs)) #Fs is sampling frequency that is provided by the read function
+max_time = data.size/Fs #number samples/frequency gives you time for total signal
+timestep = 1/Fs #sample time interval
+signal_freq=48000 #can be reduced to downsample I am keeping it the same as the one read function gave
+length_of_data = len(data)
+print("length of data {}" .format(length_of_data))
+N = length_of_data  #572414 samples
+#print(N)
+#time_vector=np.linspace(0,max_time,data.size) #create time vector equally spaced
+time_vector =np.linspace(0,(N-1)*timestep,N) #from zero to length of time, for N spaced intervals
+#print(np.shape(time_vector)) #1D same number of elements as data samples
+#print(max_time) #11.925sec
+freqstep = Fs/N #freq interval
+freq_vector =np.linspace(0,(N-1)*freqstep,N) # equivalent to freq = np.fft.fftfreq(N,d=timestep)
+#freq_vector2 = np.fft.fftfreq(data.size,d=timestep)
+
+
+# apply fft to data to transform to frequency domain
+Data_fourier=np.fft.fft(data) # D will be a series of complex numbers 
+D_mag = np.abs(Data_fourier)/N # we want the magntidue and normalize it 
+# find frequencies where amplitude is greater than 100
+Fnoise = np.where (D_mag>100)
+print("isolated frequencies sample index", Fnoise) # should be 1500 and 46500 freq (mirrored) and samples (17300-18500,553967-555085)
+Fc = 1400 #cutoff frequency 1400Hz noise 
+f0=Fc/Fs #normalized cutoff frequency (butterworth filter accepts normalized frequencies)
+
+b, a = signal.butter(4, f0, 'low') #butterworth filter order 4, 4 chose because higher order implies better filter
+print(f0)
+filtered_signal = signal.filtfilt(b,a,data) #filtfilt accepts b,a which are filter coefficients and the datavector
+w, h = signal.freqs(b, a) #for bode plot
+
+#writing filtered signal to wavefile
+filteredaudio = np.int16(filtered_signal.real) #to be able to write to wave file we need to use .real
+write("Cafe_with_noise_filtered.wav", Fs,filteredaudio)
+playsound('Cafe_with_noise_filtered.wav')
+
+#plotting figures
+plt.figure(1)
+
+plt.plot(freq_vector,D_mag) # filtered freq
+plt.xlabel('freq ')
+plt.ylabel('Amplitude')
+plt.title('unfiltered output')
+
+plt.figure(2)
+plt.plot(D_mag) # filtered freq
+plt.xlabel('samples ')
+plt.ylabel('Amplitude')
+plt.title('unfiltered output')
+
+#from source online
+plt.figure(3) #bode plot
+plt.semilogx(w, 20 * np.log10(abs(h)))
+plt.title('Butterworth filter frequency response')
+plt.xlabel('Frequency [radians / second]')
+plt.ylabel('Amplitude [dB]')
+plt.margins(0, 0.1)
+plt.grid(which='both', axis='both')
+plt.axvline(100, color='green') # cutoff frequency
+
+
+plt.figure(4)
+plt.plot(time_vector,filtered_signal)
+plt.xlabel('time s ')
+plt.ylabel('Amplitude')
+plt.title('filtered output')
+
+plt.figure(5)
+output_fourier=np.fft.fft(filtered_signal) # output will be a series of complex numbers 
+output_mag = np.abs(output_fourier)/N # we want the magntidue and normlaize it 
+plt.plot(freq_vector,output_mag) # filtered freq
+plt.xlabel('freq ')
+plt.ylabel('Amplitude')
+plt.title('filtered output')
+plt.show()
+
+
+# fig2, (ax1, ax2,ax3,ax4) = plt.subplots(4, 1)
+
+# ax1.plot(time_vector,data)
+# ax2.plot(freq_vector,D_mag) # equivalent to ax2.plot(data)
+# ax3.plot(D_mag)
+# #ax3.plot(freq_vector2,D_mag) # filtered freq
+# ax4.plot(freq_vector,D_mag) # filtered time domain
+# ax1.set_ylabel('Amplitude')
+# ax1.set_xlabel('time s')
+# ax2.set_ylabel('Amplitude')
+# ax2.set_xlabel('freq hz')
+# ax3.set_ylabel('Amplitude')
+# ax3.set_xlabel('samples')
+# ax1.title.set_text('Unfiltered vs time')
+# ax2.title.set_text('freq unfiltered')
+# ax3.title.set_text('filtered freq')
+# ax4.title.set_text('filtered time domain')
+# plt.grid('on')
+# plt.show()
