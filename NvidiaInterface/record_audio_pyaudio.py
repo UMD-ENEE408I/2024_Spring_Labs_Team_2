@@ -1,4 +1,4 @@
-
+#cite: https://realpython.com/playing-and-recording-sound-python/#pyaudio
 #record audio using pyaudio
 import pyaudio
 import wave
