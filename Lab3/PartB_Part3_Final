@@ -1,1 +1,99 @@
+# Tutorial3_PartB, Anne, Davy, Kenney
+# Find delay time between two signals (same signals using autocorrelation) 240000- (23995) = 5 samples delay
+
+import matplotlib.pyplot as plt
+import numpy as np
+#import warnings
+#import pandas as pd
+from scipy import signal
+#from scipy.io.wavfile import write
+from scipy.io import wavfile
+#from scipy.linalg import circulant
+#from playsound import playsound
+
+samplerate1, data1 = wavfile.read('M1.wav')
+samplerate2, data2 = wavfile.read('M2.wav') #wavfile.read returns sample rate at which the wavefile was generated
+#playsound('M1.wav')
+
+data1=np.array(data1, dtype='int64')
+data2=np.array(data2, dtype='int64')
+
+# add zero padding to data1 on either side by size of vector -1 
+# total we are adding (48000-1)zeros +24000 for a total padded length of 71999
+
+padded_data1 = np.pad(data1, ((len(data1)-1), (len(data1))), 'constant',constant_values=(0))
+
+#create matrix1 which is shape(0)data1,2*shape(0)data1 -1 (number of columns)
+# rows = dimension of data1 = 24000, number of columns =48000-1 
+data1_matrix = np.zeros((len(data1),2*data1.shape[0]))
+
+# print(data1_matrix.shape)
+# print(padded_data1.shape)
+# print(data2.shape)
+
+# filling in matrix with the zero padded array
+for i in range (2*data1.shape[0]): #for entire number of samples in data1 (aka all the columns of matrix)
+    data1_matrix[:,i] = padded_data1[i:len(data1)+i] 
+    # for all rows, each column i will be filled with elements of the padded array (i:length of data1 + i)
+    # example: if number of data lements is 4, and zero padded array is 10 elements, we woudl first look at 1 to 5, then 2 to 6 etc of the array
+# make the data two vector a column shape
+data2 = data2.reshape((1,data2.shape[0]))
+# matrix multiply
+corr_sig= np.matmul(data2,data1_matrix)
+
+
+max1 = np.max(corr_sig) #find max of signal
+max1_index = np.argmax(corr_sig) # index number where max occurs : index (23995)
+print("amplitude of max ", max1) #32757
+print("sample number of max is", max1_index) 
+
+plt.figure(1)
+plt.plot(np.abs(corr_sig))
+plt.xlabel('samples')
+plt.ylabel('Amplitude')
+plt.title('Data1: M1 signal')
+
+# Using Built-in Correlate Function
+# corr = np.absolute(signal.correlate(data1, data2))
+# print("length of corr", len(corr))
+# lags = signal.correlation_lags(len(data1), len(data2))
+# #print("lags", lags)
+# #corr /= np.max(corr).astype(np.int64)
+
+# lag = lags[np.argmax(corr)]
+# max= np.argmax(corr)
+# print("max corr", max)
+# print("lag", lag) #1232 index
+# max1 = np.max(corr)
+# print("amplitude of max ", max1)
+# print("sample number of maximum correlation is", np.where(corr == max1))
+
+# fig, (ax_orig, ax_noise, ax_corr) = plt.subplots(3, 1, figsize=(4.8, 4.8))
+# ax_orig.plot(data1)
+# ax_orig.set_title('data1')
+# ax_orig.set_xlabel('Sample Number')
+# ax_noise.plot(data2)
+# ax_noise.set_title('data2')
+# ax_noise.set_xlabel('Sample Number')
+# ax_corr.plot(lags, corr)
+# ax_corr.set_title('Cross-correlated signal')
+# ax_corr.set_xlabel('Lag')
+# ax_orig.margins(0, 0.1)
+# ax_noise.margins(0, 0.1)
+# ax_corr.margins(0, 0.1)
+# fig.tight_layout()
+# plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
 
