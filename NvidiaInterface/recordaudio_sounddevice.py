@@ -1,3 +1,4 @@
+#cite : #cite: https://realpython.com/playing-and-recording-sound-python/#pyaudio
 import sounddevice as sd 
 from scipy.io.wavfile import write
 
