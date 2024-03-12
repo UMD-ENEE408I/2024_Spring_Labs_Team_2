@@ -1,4 +1,4 @@
-# record audio from a microphone, play it back and plot a spectrogram and time domain plot
+# PartD: Tutorial 5: record audio from a microphone, play it back and plot a spectrogram and time domain plot, Code Functions on Nvidia
 import numpy as np
 import matplotlib.pyplot as plt
 import pyaudio
