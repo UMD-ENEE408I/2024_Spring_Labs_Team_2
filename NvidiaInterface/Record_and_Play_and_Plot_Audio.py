@@ -11,11 +11,12 @@ from scipy.io import wavfile
 
 
 chunk = 1024  # Record in chunks of 1024 samples
+
 sample_format = pyaudio.paInt16  # 16 bits per sample
 #channels = 2 # right and left
 channels = 1 #monochannel
 fs = 44100  # Record at 44100 samples per second
-seconds = 10
+seconds = 3
 filename = "CruelSummer.wav"
 
 p = pyaudio.PyAudio()  # Create an interface to PortAudio
@@ -67,7 +68,7 @@ print('playing recording')
 print(data.shape) # returns a 2D array(440320,2)
 # leftchannel = data[:,0]
 # rightchannel = data[:,1]
-playsound('CruelSummer.wav') # play recording
+# playsound('CruelSummer.wav') # play recording
 
 plt.figure(1)
 plt.specgram(data, Fs)  # wants only 1D so I selected the left channel
