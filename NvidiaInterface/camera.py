@@ -1,3 +1,4 @@
+# part D, lab tutorial 5, Code functions 
 import cv2
 
 
