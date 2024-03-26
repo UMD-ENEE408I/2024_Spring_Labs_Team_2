@@ -1,1 +1,20 @@
+// wifi between heltec and nvidia
+#include "WiFi.h"
 
+const char* ssid = "Heltec_AP";
+const char* password = "password";
+
+void setup() {
+  Serial.begin(115200);
+  // Setting up the device as an Access Point
+  WiFi.softAP(ssid, password);
+  Serial.println("Access Point Started");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.softAPIP());
+
+
+}
+
+void loop() {
+  // Your code here
+}
