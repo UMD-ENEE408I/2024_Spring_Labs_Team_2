@@ -1,0 +1,19 @@
+# python version
+import wifi
+import serial
+#from PyAccessPoint import pyaccesspoint
+
+ssid = "Heltec_AP"
+password = "password"
+wifi.softAP(ssid, password)
+
+with serial.Serial() as ser:
+    ser.baudrate = 115200
+    ser.port = 'COM1'
+    ser.open()
+    ser.write(b'Access Point Started')
+    ser.write(b'IP Address')
+    ser.write(wifi.softAP())
+
+
+
