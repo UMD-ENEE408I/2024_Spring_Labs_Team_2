@@ -1,1 +1,120 @@
+#include <Arduino.h>
+#include <Encoder.h>
+
+//encoder pins
+const unsigned int M1_ENC_A = 39;
+const unsigned int M1_ENC_B = 38;
+//const unsigned int M2_ENC_A = 37;
+//const unsigned int M2_ENC_B = 36;
+
+long encoderCount = 0;
+
+//motor pins
+const unsigned int M1_IN_1 = 13; //pins that singals appear on
+const unsigned int M1_IN_2 = 12;
+// const unsigned int M2_IN_1 = 25;
+// const unsigned int M2_IN_2 = 14;
+const unsigned int M1_IN_1_CHANNEL = 8; //channels that generate the pwm signals
+const unsigned int M1_IN_2_CHANNEL = 9;
+// const unsigned int M2_IN_1_CHANNEL = 10;
+// const unsigned int M2_IN_2_CHANNEL = 11;
+
+const unsigned int PWM_VALUE = 512; // Max PWM given 8 bit resolution
+
+const int freq = 5000;
+const int ledChannel = 0;
+const int resolution = 10;
+
+//define functions
+//Motor 1
+void M1_backward() {
+  ledcWrite(M1_IN_1_CHANNEL, PWM_VALUE); //ledcwrite(channel, duty cycle)
+  ledcWrite(M1_IN_2_CHANNEL, 0);
+}
+
+void M1_forward() {
+  ledcWrite(M1_IN_1_CHANNEL, 0);
+  ledcWrite(M1_IN_2_CHANNEL, PWM_VALUE);
+}
+
+void M1_stop() {
+  ledcWrite(M1_IN_1_CHANNEL, PWM_VALUE);
+  ledcWrite(M1_IN_2_CHANNEL, PWM_VALUE);
+}
+
+//motor 2
+// void M2_backward() {
+//   ledcWrite(M2_IN_1_CHANNEL, PWM_VALUE);
+//   ledcWrite(M2_IN_2_CHANNEL, 0);
+// }
+
+// void M2_forward () {
+//   ledcWrite(M2_IN_1_CHANNEL, 0);
+//   ledcWrite(M2_IN_2_CHANNEL, PWM_VALUE);
+// }
+
+// void M2_stop() { //change value of led // select duty cycle for the pin
+//   ledcWrite(M2_IN_1_CHANNEL, PWM_VALUE);
+//   ledcWrite(M2_IN_2_CHANNEL, PWM_VALUE);
+// }
+
+// //handle encoder interrupts
+// void handleEncoder() {
+//     if(digitalRead(M1_ENC_A)> digitalRead(M1_ENC_B)) { //if rising edge is greater (moving forward)
+//         encoderCount ++;
+
+//     }
+// }
+
+void setup() {
+
+// Stop the right motor by setting pin 14 low
+  // this pin floats high or is pulled
+  // high during the bootloader phase for some reason
+
+  Serial.begin(115200);
+// set up motors
+
+  // we can control the pwm of indepenent motors 
+  // esp32 has 16 possible channels to generate independent waveforms // create pwm sources
+  ledcSetup(M1_IN_1_CHANNEL, freq, resolution); //configure LED PWM functionalities
+  ledcSetup(M1_IN_2_CHANNEL, freq, resolution);
+//   ledcSetup(M2_IN_1_CHANNEL, freq, resolution);
+//   ledcSetup(M2_IN_2_CHANNEL, freq, resolution);
+ //attach the channel (pwm sources) to the GPIO to be controlled these are the output pins
+  ledcAttachPin(M1_IN_1, M1_IN_1_CHANNEL); //ledcattachpin(GPIO,CHannel)
+  ledcAttachPin(M1_IN_2, M1_IN_2_CHANNEL);
+//   ledcAttachPin(M2_IN_1, M2_IN_1_CHANNEL);
+//   ledcAttachPin(M2_IN_2, M2_IN_2_CHANNEL);
+
+//set up encoders
+
+pinMode(M1_ENC_A, INPUT);
+pinMode(M1_ENC_B, INPUT);
+// pinMode(M2_ENC_A, INPUT);
+// pinMode(M2_ENC_A, INPUT);
+
+// attachInterrupt(digitalPinToInterrupt(M1_ENC_A), handleEncoder,RISING)
+
+//} // I do not need this function since we are using the encoder.h library 
+
+}
+
+void loop() {
+  // Create the encoder objects after the motor has
+  // stopped, else some sort exception is triggered
+  Encoder enc1(M1_ENC_A, M1_ENC_B); //built in function in encoder.h library sets pins to be read
+ // Encoder enc2(M2_ENC_A, M2_ENC_B);
+
+  while(true) {
+    long enc1_value = enc1.read(); // will return counts for both encoders for motor 1
+    //long enc2_value = enc2.read();
+    
+    Serial.print(enc1_value);
+    Serial.print("\t");
+    //Serial.print(enc2_value);
+    Serial.println();
+    delay(100); // Delay works now that interrupts are fixed
+  }
+}
 
