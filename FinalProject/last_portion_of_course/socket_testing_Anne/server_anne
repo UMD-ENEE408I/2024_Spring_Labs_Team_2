@@ -1,13 +1,14 @@
+
 #from socket import * doesnt require socket.socket but doesnt have gethostname function
 import socket 
-import threading # dont need threading cause we only need 1 client
+import threading # helpful if we want to know the number of active connections to our server
 
 HEADER = 1024
-PORT  = 12000 # above 4000 are unused ports in computer
-#SERVER = "172.20.10.2"  #we want to run it this server off my local network (hotospot) off this device (my computer, and its ipv4 address is this from ipconfig)
-SERVER = socket.gethostbyname(socket.gethostname()) # gets the IP address of this computer by name automatically  so if we switch our server device 
+PORT  =  8000 # above 4000 ae unused ports in computer
+SERVER = "172.20.10.5" # ip address server is listening on, we can see this in ipconfig 
+#SERVER = "127.0.0.1" local host only use if you are running both client and server on same device
+#SERVER = socket.gethostbyname(socket.gethostname()) # gets the local IP address of this computer will NOT match ipconfig above
 #print(socket.gethostname()) #gives us name of our computer desktop-f84p45
-# print(SERVER) #prints ipv4 address 172.20.10.2
 
 ADDR = (SERVER, PORT) #has to be a touple, with ip address of sever and port
 FORMAT = 'utf-8'
@@ -19,6 +20,7 @@ serverSocket.bind(ADDR) # bind the server to the address, so anything that connn
 # function to accept message from client and decode it, as well as close socket
 def handle_client (connectionSocket, addr):
     print(f"[NEW CONNECTION] {addr} connected.")
+
 
     connected = True
     while connected:
