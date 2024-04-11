@@ -1,25 +1,27 @@
 import socket
 
 HEADER = 1024
-PORT = 12000
+PORT = 8000
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE  = "!DISCONNECT"
-SERVER = socket.gethostbyname(socket.gethostname()) # ip address of server
+#SERVER = socket.gethostbyname(socket.gethostname()) # ip address of server
+#SERVER = "127.0.0.1" #not used
+SERVER = "172.20.10.2" # ipaddress for laptop server this wil match the socket.gethostby name when server run on my laptop
+# the client ip address is 172.20.10.5 this will show up as an active connection on server device
 ADDR = (SERVER, PORT)
-
+print("addr made")
 #create sockets
 clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # create client sockket
 clientSocket.connect(ADDR) #connect to server 
-
+print("socket made")
 # function to send message
 def send(msg):
     message= msg.encode(FORMAT) #encode a string into bytes object which is sent through the socket
     msg_length = len(message)
     send_length = str(msg_length).encode(FORMAT) # first message to be sent, we wnat this to be 1024 bytes long, therefore we may need to pad it
-    send_length += b' ' *(HEADER -len(send_length)) # padding with zeros
+    send_length += b' ' *(HEADER -len(send_length)) # padding with zeros# 
     clientSocket.send(send_length)
     clientSocket.send(message)
-
+print("client trying to connect")
 send("hello Anne")
-#send(DISCONNECT_MESSAGE) # if you want  to disconnect from server socket
-
+send(DISCONNECT_MESSAGE) # if you want  to disconnect from server socket
