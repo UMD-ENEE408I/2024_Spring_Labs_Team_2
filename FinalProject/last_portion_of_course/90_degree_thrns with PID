@@ -1,0 +1,218 @@
+
+// currently this measures both encoder counts as well as moves the motors and implements a PID, right now the enc2 for M2 is coutning way too high and spinning much faster then the M1 (left motor)
+
+// M1 is left motor, facing forward, M2 is right motor
+#include <Arduino.h>
+#include <Encoder.h>
+#include <Adafruit_MCP3008.h>
+
+
+//encoder pins
+const unsigned int M1_ENC_A = 39;
+const unsigned int M1_ENC_B = 38;
+const unsigned int M2_ENC_A = 37;
+const unsigned int M2_ENC_B = 36;
+
+int base_pid = 250;
+
+long previous_time = 0;
+long previous_error = 0; //should these two go into void loop?
+ 
+//motor pins
+const unsigned int M1_IN_1 = 13; //pins that singals appear on
+const unsigned int M1_IN_2 = 12;
+const unsigned int M2_IN_1 = 25;
+const unsigned int M2_IN_2 = 14;
+const unsigned int M1_IN_1_CHANNEL = 8; //channels that generate the pwm signals
+const unsigned int M1_IN_2_CHANNEL = 9;
+const unsigned int M2_IN_1_CHANNEL = 10;
+const unsigned int M2_IN_2_CHANNEL = 11;
+
+const unsigned int PWM_VALUE = 512; // 512 Max PWM given 8 bit resolution
+
+const int freq = 5000;
+const int ledChannel = 0;
+const int resolution = 10;
+
+
+//define functions
+//Motor 1
+void M1_backward() {
+  ledcWrite(M1_IN_1_CHANNEL, PWM_VALUE); //ledcwrite(channel, duty cycle)
+  ledcWrite(M1_IN_2_CHANNEL, 0);
+}
+
+void M1_forward() {
+  ledcWrite(M1_IN_1_CHANNEL, 0);
+  ledcWrite(M1_IN_2_CHANNEL, PWM_VALUE);
+}
+void M1_forward_pid_control(int pid_value) {
+  ledcWrite(M1_IN_1_CHANNEL, 0);
+  ledcWrite(M1_IN_2_CHANNEL, pid_value);
+}
+
+void M1_stop() {
+  ledcWrite(M1_IN_1_CHANNEL, PWM_VALUE);
+  ledcWrite(M1_IN_2_CHANNEL, PWM_VALUE);
+}
+
+//motor 2
+void M2_backward() {
+  ledcWrite(M2_IN_1_CHANNEL, PWM_VALUE);
+  ledcWrite(M2_IN_2_CHANNEL, 0);
+}
+
+void M2_forward () {
+  ledcWrite(M2_IN_1_CHANNEL, 0);
+  ledcWrite(M2_IN_2_CHANNEL, PWM_VALUE);
+}
+
+void M2_forward_pid_control(int pid_value) {
+  ledcWrite(M2_IN_1_CHANNEL, 0);
+  ledcWrite(M2_IN_2_CHANNEL, pid_value);
+}
+
+void M2_stop() { //change value of led // select duty cycle for the pin
+  ledcWrite(M2_IN_1_CHANNEL, PWM_VALUE);
+  ledcWrite(M2_IN_2_CHANNEL, PWM_VALUE);
+}
+
+int PID_controller(int encM1_count, int encM2_count, float Kp, float Kd,float Ki) {
+  
+  long current_time = micros(); //get current time
+  float delta_t = (current_time - previous_time)/(1.0e6); //convert time to seconds
+  float error = encM1_count - encM2_count;
+  float error_derivative = (error - previous_error)/delta_t;
+  float error_integral = error_integral + error*delta_t;
+
+  int speedM2 = Kp*error + Kd*error_derivative + Ki*error_integral;
+
+  previous_error = error;
+  previous_time = current_time;
+
+  return speedM2;
+}
+
+int PID_controller_90_leftturn_M1(int encM1_count, float Kp, float Kd,float Ki) {
+  int count_lefturn = 800;
+  long current_time = micros(); //get current time
+  float delta_t = (current_time - previous_time)/(1.0e6); //convert time to seconds
+  float error = encM1_count - count_lefturn;
+  float error_derivative = (error - previous_error)/delta_t;
+  float error_integral = error_integral + error*delta_t;
+
+  int speedM1 = Kp*error + Kd*error_derivative + Ki*error_integral;
+
+  previous_error = error;
+  previous_time = current_time;
+
+  return speedM1;
+}
+
+int PID_controller_90_leftturn_M2(int encM2_count, float Kp, float Kd,float Ki) {
+  int count_lefturn = 800;
+  long current_time = micros(); //get current time
+  float delta_t = (current_time - previous_time)/(1.0e6); //convert time to seconds
+  float error = encM2_count - count_lefturn;
+  float error_derivative = (error - previous_error)/delta_t;
+  float error_integral = error_integral + error*delta_t;
+
+  int speedM2 = Kp*error + Kd*error_derivative + Ki*error_integral;
+
+  previous_error = error;
+  previous_time = current_time;
+
+  return speedM2;
+}
+
+
+
+
+void setup() {
+
+// Stop the right motor by setting pin 14 low
+  // this pin floats high or is pulled
+  // high during the bootloader phase for some reason
+  pinMode(14, OUTPUT);
+  digitalWrite(14, LOW);
+  delay(100);
+  Serial.begin(115200);
+// set up motors
+
+  // we can control the pwm of indepenent motors 
+  // esp32 has 16 possible channels to generate independent waveforms // create pwm sources
+  ledcSetup(M1_IN_1_CHANNEL, freq, resolution); //configure LED PWM functionalities
+  ledcSetup(M1_IN_2_CHANNEL, freq, resolution);
+  ledcSetup(M2_IN_1_CHANNEL, freq, resolution);
+  ledcSetup(M2_IN_2_CHANNEL, freq, resolution);
+ //attach the channel (pwm sources) to the GPIO to be controlled these are the output pins
+  ledcAttachPin(M1_IN_1, M1_IN_1_CHANNEL); //ledcattachpin(GPIO,CHannel)
+  ledcAttachPin(M1_IN_2, M1_IN_2_CHANNEL);
+  ledcAttachPin(M2_IN_1, M2_IN_1_CHANNEL);
+  ledcAttachPin(M2_IN_2, M2_IN_2_CHANNEL);
+
+   
+}
+
+void loop() {
+  float Kp = 1;
+  float Kd = 0.1;
+  float Ki = 0.1;
+  long enc1_value = 0; // initilize to 0
+  long enc2_value = 0;
+  
+  //M2_stop();
+  // Create the encoder objects after the motor has
+  // stopped, else some sort exception is triggered
+  Encoder enc1(M1_ENC_A, M1_ENC_B); //built in function in encoder.h library sets pins to be read
+  Encoder enc2(M2_ENC_A, M2_ENC_B); //begin counts
+
+ // M1_forward_pid_control(base_pid); //start at initial speed
+ // M2_forward_pid_control(base_pid); //start at intitial speed
+ // Serial.print("both motors forward by base pid ");
+  int i = 0;
+  while (true) {
+   long enc1_value = enc1.read();
+   long enc2_value = enc2.read();
+  //   Serial.print("enc1value: ");
+  //   Serial.print(enc1_value);
+  //   Serial.print("\t");
+  //   Serial.print("enc2value: ");
+  //   Serial.print(enc2_value);
+  //   Serial.println();
+  //   int M2_adjusted_speed = PID_controller(enc1_value, enc2_value, Kp,Kd,Ki);
+  //   M2_forward_pid_control(M2_adjusted_speed);  // move m2 until it matches m1
+    
+     delay(100);
+  //  //  i++;
+  // //after moving forward stop both motors
+  //  M1_stop();
+   // M2_stop();
+    delay(100);
+    Serial.print("90 degree turn ");
+    //enc1_value =0;
+    //enc2_value =0;
+    Serial.print("enc1value: ");
+    Serial.print(enc1_value);
+    Serial.print("\t");
+    Serial.print("enc2value: ");
+    Serial.print(enc2_value);
+    Serial.println();
+    // do 90 degree turn
+    int M1_90_turn =PID_controller_90_leftturn_M1(enc1_value,Kp,Kd,Ki);
+   int M2_90_turn=  PID_controller_90_leftturn_M2(enc2_value,Kp,Kd,Ki);
+ 
+ M1_forward_pid_control(M1_90_turn);
+ M2_forward_pid_control(M2_90_turn);
+
+    
+   // delay(100); 
+  }
+
+
+
+  
+  
+  exit(0);
+}
+//positibve moving toward sensor, negative moving away from sensor
