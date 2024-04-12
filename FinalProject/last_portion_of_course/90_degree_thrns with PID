@@ -42,6 +42,11 @@ void M1_backward() {
   ledcWrite(M1_IN_2_CHANNEL, 0);
 }
 
+void M1_backward_pid_control(int pid_value) {
+    ledcWrite(M1_IN_1_CHANNEL, pid_value); //ledcwrite(channel, duty cycle)
+  ledcWrite(M1_IN_2_CHANNEL, 0);
+}
+
 void M1_forward() {
   ledcWrite(M1_IN_1_CHANNEL, 0);
   ledcWrite(M1_IN_2_CHANNEL, PWM_VALUE);
@@ -77,6 +82,9 @@ void M2_stop() { //change value of led // select duty cycle for the pin
   ledcWrite(M2_IN_2_CHANNEL, PWM_VALUE);
 }
 
+
+//this function returns the speed of M2 based on the encoder count of M1, the returned speed is the speed to be inputted into the move forward function,
+// the pid controller is for 1 motor to match the count of the second motor, there will always be a slight lag
 int PID_controller(int encM1_count, int encM2_count, float Kp, float Kd,float Ki) {
   
   long current_time = micros(); //get current time
@@ -93,36 +101,49 @@ int PID_controller(int encM1_count, int encM2_count, float Kp, float Kd,float Ki
   return speedM2;
 }
 
-int PID_controller_90_leftturn_M1(int encM1_count, float Kp, float Kd,float Ki) {
-  int count_lefturn = 800;
+//pass in encoder count for M1 and the desired turn count for M1 as well as parameters Kp,Ki,Kd,this returns the speed value to intput inot the motors
+int PID_controller_turn_speed(int encoder_count, float Kp, float Kd,float Ki,int desired_turn_count) {
+  int count_turn = desired_turn_count;
   long current_time = micros(); //get current time
   float delta_t = (current_time - previous_time)/(1.0e6); //convert time to seconds
-  float error = encM1_count - count_lefturn;
+  float error = encoder_count - count_turn;
   float error_derivative = (error - previous_error)/delta_t;
   float error_integral = error_integral + error*delta_t;
 
-  int speedM1 = Kp*error + Kd*error_derivative + Ki*error_integral;
+  int speed = Kp*error + Kd*error_derivative + Ki*error_integral;
 
   previous_error = error;
   previous_time = current_time;
 
-  return speedM1;
+  return speed;
 }
 
-int PID_controller_90_leftturn_M2(int encM2_count, float Kp, float Kd,float Ki) {
-  int count_lefturn = 800;
-  long current_time = micros(); //get current time
-  float delta_t = (current_time - previous_time)/(1.0e6); //convert time to seconds
-  float error = encM2_count - count_lefturn;
-  float error_derivative = (error - previous_error)/delta_t;
-  float error_integral = error_integral + error*delta_t;
 
-  int speedM2 = Kp*error + Kd*error_derivative + Ki*error_integral;
+//this function will turn the mouse 90 degrees to the left, motors are in opposite directions so their encoder count will be the same sign depending on the direction you wish to turn
+void turn_90degree_left(int encM2_count, int encM1_count,float Kp, float Kd, float Ki) {
+  int desired_turn_count = 200; //positive value for turning both wheels one cw the other ccw,approximate count for turning 90 degrees
 
-  previous_error = error;
-  previous_time = current_time;
+ int speedM1 = PID_controller_turn_speed(encM1_count, Kp, Kd, Ki,desired_turn_count);
+ int speedM2=  PID_controller_turn_speed(encM2_count, Kp, Kd, Ki, desired_turn_count);
 
-  return speedM2;
+ 
+ M1_backward_pid_control(speedM1);
+ M2_forward_pid_control(speedM2);
+
+  
+}
+
+//this function will turn the mouse 90 degrees to the left 
+void turn_90degree_right(int encM2_count, int encM1_count,float Kp, float Kd, float Ki) {
+  int desired_turn_count = -200; //negative value for turning both wheels one cw the other ccw, approximate count for turning 90 degrees
+
+ int speedM1 = PID_controller_turn_speed(encM1_count, Kp, Kd, Ki,desired_turn_count);
+ int speedM2=  PID_controller_turn_speed(encM2_count, Kp, Kd, Ki, desired_turn_count);
+
+ M1_backward_pid_control(speedM1);
+ M2_forward_pid_control(speedM2);
+
+  
 }
 
 
@@ -171,42 +192,36 @@ void loop() {
  // M2_forward_pid_control(base_pid); //start at intitial speed
  // Serial.print("both motors forward by base pid ");
   int i = 0;
+  delay(1000); //delay start
   while (true) {
    long enc1_value = enc1.read();
    long enc2_value = enc2.read();
-  //   Serial.print("enc1value: ");
-  //   Serial.print(enc1_value);
-  //   Serial.print("\t");
-  //   Serial.print("enc2value: ");
-  //   Serial.print(enc2_value);
-  //   Serial.println();
-  //   int M2_adjusted_speed = PID_controller(enc1_value, enc2_value, Kp,Kd,Ki);
-  //   M2_forward_pid_control(M2_adjusted_speed);  // move m2 until it matches m1
-    
-     delay(100);
-  //  //  i++;
   // //after moving forward stop both motors
   //  M1_stop();
    // M2_stop();
-    delay(100);
-    Serial.print("90 degree turn ");
+    //delay(100);
+   // Serial.print("90 degree turn ");
     //enc1_value =0;
     //enc2_value =0;
-    Serial.print("enc1value: ");
-    Serial.print(enc1_value);
-    Serial.print("\t");
-    Serial.print("enc2value: ");
-    Serial.print(enc2_value);
-    Serial.println();
+    // Serial.print("enc1value: ");
+    // Serial.print(enc1_value);
+    // Serial.print("\t");
+    // Serial.print("enc2value: ");
+    // Serial.print(enc2_value);
+    // Serial.println();
     // do 90 degree turn
-    int M1_90_turn =PID_controller_90_leftturn_M1(enc1_value,Kp,Kd,Ki);
-   int M2_90_turn=  PID_controller_90_leftturn_M2(enc2_value,Kp,Kd,Ki);
+    turn_90degree_left(enc1_value,enc2_value,Kp, Kd, Ki);
+    delay(100);
+     M1_stop();
+     M2_stop();
+    delay(2000);
+
+   // turn_90degree_right(enc1_value,enc2_value,Kp, Kd, Ki);
  
- M1_forward_pid_control(M1_90_turn);
- M2_forward_pid_control(M2_90_turn);
 
     
-   // delay(100); 
+    delay(100); 
+    i++;
   }
 
 
@@ -216,3 +231,4 @@ void loop() {
   exit(0);
 }
 //positibve moving toward sensor, negative moving away from sensor
+
