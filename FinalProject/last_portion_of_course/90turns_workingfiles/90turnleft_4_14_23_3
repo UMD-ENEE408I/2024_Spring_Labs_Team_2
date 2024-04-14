@@ -1,6 +1,5 @@
 
-// currently this measures both encoder counts as well as moves the motors and implements a PID, right now the enc2 for M2 is coutning way too high and spinning much faster then the M1 (left motor)
-
+//this turns the mouse left, motor1 forward, and motor2 backward, the encoder value from M1 controls M2, which creates inconsistency
 // M1 is left motor, facing forward, M2 is right motor
 #include <Arduino.h>
 #include <Encoder.h>
