@@ -101,7 +101,7 @@ void turnConsistent(int angle, bool direction) {
   long last_error = 0;
   long total_error = 0;
   // Kickstart 100 ms delay
-  if (direction) {
+  if (direction) {      // True = Right, False = Left;
     M1_forward(base_pid);
     M2_backward(base_pid);
   } else {
@@ -120,8 +120,7 @@ void turnConsistent(int angle, bool direction) {
     error = enc1_value - enc2_value;
     int pid_value = Kp_s*error + Kd_s*(error-last_error) + Ki_s*total_error; // Positive Error = right moving faster, Negative = left
     last_error = error;
-    //total_error += error; // questionable about including Ki, Seems to have negative effects
-    // Hence, If error is negative, right motor will decrease, with positive, left motor will decrease
+    // Motor Adjustments
     int right_motor = base_pid + pid_value;
     int left_motor = base_pid - pid_value;
     if (direction) {
