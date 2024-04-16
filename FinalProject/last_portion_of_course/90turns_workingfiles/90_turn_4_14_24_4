@@ -1,11 +1,12 @@
 
-// currently this measures both encoder counts as well as moves the motors and implements a PID, right now the enc2 for M2 is coutning way too high and spinning much faster then the M1 (left motor)
-
+//pid loop for both wheels
 // M1 is left motor, facing forward, M2 is right motor
 #include <Arduino.h>
-#include <Encoder.h>
-#include <Adafruit_MCP3008.h>
 #include <stdio.h> 
+#include <Encoder.h>
+//#include "../.pio/libdeps/heltec_wifi_kit_32_v2/Encoder/Encoder.h"
+#include <Adafruit_MCP3008.h>
+//#include "../.pio/libdeps/heltec_wifi_kit_32_v2/Adafruit MCP3008/Adafruit_MCP3008.h"
 
 
 //encoder pins
@@ -252,8 +253,8 @@ void turn_left(int ending_encoder_count_M1, int ending_encoder_count_M2, int enc
             {
               Serial.print("exitclause");
               Serial.println(); 
-              M1_set_speed(0);
-              M2_set_speed(0);
+              M1_set_speed(PWM_VALUE);
+              M2_set_speed(PWM_VALUE);
               cont =false;
             }
             // M1_stop();
@@ -340,4 +341,3 @@ void loop() {
  // exit(0);
 }
 //positibve moving toward sensor, negative moving away from sensor
-
