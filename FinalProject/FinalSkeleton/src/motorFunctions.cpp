@@ -52,7 +52,7 @@ void M2_stop() {
 void move_forward(int distance) {
   Encoder enc1(M1_ENC_A, M1_ENC_B); 
   Encoder enc2(M2_ENC_A, M2_ENC_B);
-  long enc1_value = -1;
+  long enc1_value = -1; // Initially toggle to -1 for instance in which we want to drive indefinitely
   long enc2_value = abs(enc2.read());
   long error = 0;
   long last_error = 0;
