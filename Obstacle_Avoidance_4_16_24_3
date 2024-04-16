@@ -1,1 +1,264 @@
+// M1 is left motor, facing forward, M2 is right motor
+#include <Arduino.h>
+#include <stdio.h> 
+#include <Encoder.h>
+#include <Adafruit_MCP3008.h>
 
+//encoder pins
+const unsigned int M1_ENC_A = 39;
+const unsigned int M1_ENC_B = 38;
+const unsigned int M2_ENC_A = 37;
+const unsigned int M2_ENC_B = 36;
+
+long previous_time;
+long previous_error; //should these two go into void loop?
+float error_integral;
+int flag;
+//float error_derivative;
+ 
+//motor pins
+const unsigned int M1_IN_1 = 13; //pins that signals appear on
+const unsigned int M1_IN_2 = 12;
+const unsigned int M2_IN_1 = 25;
+const unsigned int M2_IN_2 = 14;
+const unsigned int M1_IN_1_CHANNEL = 8; //channels that generate the pwm signals
+const unsigned int M1_IN_2_CHANNEL = 9;
+const unsigned int M2_IN_1_CHANNEL = 10;
+const unsigned int M2_IN_2_CHANNEL = 11;
+
+const unsigned int PWM_VALUE = 512; // 512 Max PWM given 8 bit resolution
+
+const int freq = 5000;
+const int ledChannel = 0;
+const int resolution = 10;
+
+const float Kp_1 = 7; //unstable at kp = 9
+const float Kd_1 = 0;
+const float Ki_1 = 10; //ki =10
+
+const float Kp_2 = 9;
+const float Kd_2 = 0;
+const float Ki_2 = 10;
+
+//motor pwm need to be set currently above 300pwm, speed input into lcd write has to be positive
+void M2_set_speed(int speed) { //right motor facing forward
+  if(speed<0) { //turn foward 
+     if(abs(speed)>512){
+      speed=-512;
+     }
+     speed = abs(speed);
+     ledcWrite(M2_IN_1_CHANNEL, 0);
+     ledcWrite(M2_IN_2_CHANNEL, speed);
+  }else if(speed>0){  //speed is positive
+    if (abs(speed)>512){
+      speed =512;
+    }
+    ledcWrite(M2_IN_1_CHANNEL, speed); //turn backward
+    ledcWrite(M2_IN_2_CHANNEL, 0);
+  }
+  else { //shut off motor
+   ledcWrite(M2_IN_1_CHANNEL, speed); //turn backward
+   ledcWrite(M2_IN_2_CHANNEL,speed);
+  }
+}
+
+void M1_set_speed(int speed) { //left motor facing forward
+
+  if(speed<0) { //turn backward left motor used for left turn
+    if(abs(speed)>512){
+       speed=-512;
+    }
+    speed = abs(speed);
+    ledcWrite(M1_IN_1_CHANNEL, speed); //ledcwrite(channel, duty cycle)
+    ledcWrite(M1_IN_2_CHANNEL, 0);
+  
+  }else if(speed>0){  //turn forward usef for right turn
+    if(abs(speed)>512){
+        speed=512;
+    }  
+    ledcWrite(M1_IN_1_CHANNEL, 0);
+    ledcWrite(M1_IN_2_CHANNEL, speed);
+  }else { //shut off motor
+   ledcWrite(M1_IN_1_CHANNEL, speed); //turn backward
+   ledcWrite(M1_IN_2_CHANNEL, speed);
+  }
+}
+
+//pass in encoder count for M1 and the desired turn count for M1 as well as parameters Kp,Ki,Kd,this returns the speed value to intput inot the motors
+int PID_controller_turn_speed(int enc_value, float Kp, float Kd,float Ki,int ending_encoder_count) {
+  //reference is the desired_turn_count
+  //enc_value instead of specifically enc_valueM1 and M2
+  // int amount_to_finish_turn = amount_to_finish_turn;
+  long current_time = micros(); //get current time
+  float delta_t = (current_time - previous_time)/(1.0e6); //convert time to seconds
+  float error = ending_encoder_count - enc_value; // -200 - 0, -200 - -20 = -180ending encoder count = initialenc1valuel+90, currnetl reading this is 0 when there is an error of 200
+  float error_derivative = (error - previous_error)/delta_t;
+  error_integral = error_integral + error*delta_t; // is it possible that the second term is 0 because of too small of a delta t
+  //should be global
+  int speed = Kp*error + Kd*error_derivative + Ki*error_integral;
+  //ramp input for position encoder
+  
+  previous_error = error; //should be global
+  previous_time = current_time; //should be global
+
+  Serial.print("M1 values");
+  Serial.println();
+  Serial.print(current_time);
+  Serial.print(",");
+  Serial.print(Kp);
+  Serial.print(",");
+  Serial.print(Kd); 
+  Serial.print(",");
+  Serial.print(Ki);
+  Serial.print(",");
+  Serial.print(speed);
+  Serial.print(",");
+  Serial.print(enc_value);
+  // Serial.print(",");
+  // Serial.print(enc_value_M2);
+  Serial.print(",");
+  Serial.print(error);
+  Serial.print(",");
+  Serial.print(error_integral);
+  Serial.print(",");
+
+  return speed;
+}
+
+//this function will turn the mouse 90 degrees to the left, motors are in opposite directions so their encoder count will be the same sign depending on the direction you wish to turn
+void set_both_motors_speed(int ending_encoder_count_M1, int ending_encoder_count_M2, int enc_value_M1,int enc_value_M2, float Kp_1, float Kd_1, float Ki_1,float Kp_2, float Kd_2, float Ki_2) {
+  int speedM1 = PID_controller_turn_speed(enc_value_M1, Kp_1, Kd_1, Ki_1,ending_encoder_count_M1);
+  int speedM2 = PID_controller_turn_speed(enc_value_M2, Kp_2, Kd_2, Ki_2,ending_encoder_count_M2);
+  //add speedM2, encvaluem2, endingencodervaluem2, kpm2,kdm2,kim2,
+  M1_set_speed(speedM1);
+  //M2_set_speed(speedM1); //if you want both motors to be controlled by same pid loop
+  M2_set_speed(speedM2); //now controlled by its own pid loop
+}
+
+void turn_right_90(){
+  Encoder enc1(M1_ENC_A, M1_ENC_B); //built in function in encoder.h library sets pins to be read
+  Encoder enc2(M2_ENC_A, M2_ENC_B);
+  int set_90_count = 280; // -250positive value for turning both wheels one cw the other ccw,approximate count for turning 90 degrees to the left
+  //Either Set encoder to zero or add desired to encodervalue to set desired
+  int tempvalue =0;
+  //ramp input for set_90_count 
+ 
+  //starting encoder values
+  long enc1_value = enc1.read();
+  long enc2_value = enc2.read();
+  long ending_encoder_count_M1= enc1_value;// made long instead of int
+  long ending_encoder_count_M2 = enc2_value; 
+    
+  while(tempvalue < set_90_count ){ //< for turn right
+    
+    ending_encoder_count_M1 = enc1_value + tempvalue; //-20, -40, -60, -80, -100.. -200 set90 count
+    ending_encoder_count_M2 = enc2_value + tempvalue;
+    tempvalue = 0.9*set_90_count + tempvalue; //both have same encoder reference input value, its possible I will need to make a sepearte 1 for each motor
+    
+    set_both_motors_speed(ending_encoder_count_M1, ending_encoder_count_M2, enc1_value, enc2_value, Kp_1, Kd_1, Ki_1, Kp_2, Kd_2, Ki_2); //ending encoder count instead of enc1_value
+    enc1_value = enc1.read();
+    enc2_value = enc2.read();
+
+  }
+    bool cont = true;
+    while(cont) {
+          
+      set_both_motors_speed(ending_encoder_count_M1, ending_encoder_count_M2, enc1_value, enc2_value,Kp_1, Kd_1, Ki_1, Kp_2, Kd_2, Ki_2); //ending encoder count instead of enc1_value
+      
+      if (abs(enc1_value - ending_encoder_count_M1) < 7){
+        Serial.print("exitclause");
+        Serial.println(); 
+        M1_set_speed(0);
+        M2_set_speed(0);
+        cont =false;
+      }
+    
+      enc1_value = enc1.read();
+      enc2_value = enc2.read();
+           
+    }
+ }
+
+void turn_left_90(){
+  Encoder enc1(M1_ENC_A, M1_ENC_B); //built in function in encoder.h library sets pins to be read
+  Encoder enc2(M2_ENC_A, M2_ENC_B);
+  int set_90_count = -250; // -250positive value for turning both wheels one cw the other ccw,approximate count for turning 90 degrees to the left
+  //Either Set encoder to zero or add desired to encodervalue to set desired
+  int tempvalue =0;
+  //ramp input for set_90_count 
+ 
+  //starting encoder values
+  long enc1_value = enc1.read();
+  long enc2_value = enc2.read();
+  long ending_encoder_count_M1= enc1_value;// made long instead of int
+  long ending_encoder_count_M2 = enc2_value; 
+    
+  while(tempvalue < set_90_count ){ //< for turn right
+    
+    ending_encoder_count_M1 = enc1_value + tempvalue; //-20, -40, -60, -80, -100.. -200 set90 count
+    ending_encoder_count_M2 = enc2_value + tempvalue;
+    tempvalue = 0.9*set_90_count + tempvalue; //both have same encoder reference input value, its possible I will need to make a sepearte 1 for each motor
+    
+    set_both_motors_speed(ending_encoder_count_M1, ending_encoder_count_M2, enc1_value, enc2_value, Kp_1, Kd_1, Ki_1, Kp_2, Kd_2, Ki_2); //ending encoder count instead of enc1_value
+    enc1_value = enc1.read();
+    enc2_value = enc2.read();
+
+  }
+    bool cont = true;
+    while(cont) {
+          
+      set_both_motors_speed(ending_encoder_count_M1, ending_encoder_count_M2, enc1_value, enc2_value,Kp_1, Kd_1, Ki_1, Kp_2, Kd_2, Ki_2); //ending encoder count instead of enc1_value
+      
+      if (abs(enc1_value - ending_encoder_count_M1) < 7){
+        Serial.print("exitclause");
+        Serial.println(); 
+        M1_set_speed(0);
+        M2_set_speed(0);
+        cont =false;
+      }
+    
+      enc1_value = enc1.read();
+      enc2_value = enc2.read();
+           
+    }
+ }
+
+
+void stop_motors() {
+  M1_set_speed(0);
+  M2_set_speed(0);
+  delay(500); // Ensure the robot comes to a complete stop
+}
+
+// path for obstacle avoidance, move forward count needs calibration
+void execute_path() {
+  turn_left_90();
+  move_forward_by_encoder_count(500);
+  turn_right_90();
+  move_forward_by_encoder_count(500);
+  turn_right_90();
+  move_forward_by_encoder_count(500);
+  stop_motors();
+}
+
+// Setup function
+void setup() {
+  pinMode(14, OUTPUT);
+  digitalWrite(14, LOW);
+  delay(100);
+  Serial.begin(115200);
+
+  // PWM setup
+  ledcSetup(M1_IN_1_CHANNEL, freq, resolution);
+  ledcSetup(M1_IN_2_CHANNEL, freq, resolution);
+  ledcSetup(M2_IN_1_CHANNEL, freq, resolution);
+  ledcSetup(M2_IN_2_CHANNEL, freq, resolution);
+
+  // Attach the channel to the GPIO to be controlled
+  ledcAttachPin(M1_IN_1, M1_IN_1_CHANNEL);
+  ledcAttachPin(M1_IN_2, M1_IN_2_CHANNEL);
+  ledcAttachPin(M2_IN_1, M2_IN_1_CHANNEL);
+  ledcAttachPin(M2_IN_2, M2_IN_2_CHANNEL);
+
+  execute_path(); // Execute the movement path
+}
