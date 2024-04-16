@@ -1,0 +1,62 @@
+void stop_motors() {
+  M1_set_speed(0);
+  M2_set_speed(0);
+  delay(500); // Provide a short delay to ensure the robot comes to a complete stop
+}
+
+// Function to move forward by a certain encoder count
+void move_forward_by_encoder_count(int encoder_count) {
+  Encoder enc1(M1_ENC_A, M1_ENC_B);
+  Encoder enc2(M2_ENC_A, M2_ENC_B);
+  long start_enc1 = enc1.read();
+  long start_enc2 = enc2.read();
+  
+  // Move forward until the encoder count is reached
+  while ((enc1.read() - start_enc1) < encoder_count && (enc2.read() - start_enc2) < encoder_count) {
+    M1_set_speed(PWM_VALUE); // Set to some positive value to move forward
+    M2_set_speed(PWM_VALUE); // Set to some positive value to move forward
+  }
+  
+  stop_motors(); // Stop the robot after moving the desired distance
+}
+
+// Function to turn the robot 90 degrees right
+void turn_right_90() {
+  Encoder enc1(M1_ENC_A, M1_ENC_B);
+  Encoder enc2(M2_ENC_A, M2_ENC_B);
+  
+  // Determine the encoder count needed to turn 90 degrees to the right
+  int turn_count = 250; // example value that turns the robot 90 degrees
+  
+  // Initial encoder readings
+  long start_enc1 = enc1.read();
+  long start_enc2 = enc2.read();
+  
+  // Turn right until the encoder count is reached
+  while ((enc1.read() - start_enc1) > -turn_count && (enc2.read() - start_enc2) < turn_count) {
+    M1_set_speed(-PWM_VALUE); // Set to negative value to turn right
+    M2_set_speed(PWM_VALUE);  // Set to positive value to turn right
+  }
+  
+  stop_motors(); // Stop the robot after turning
+}
+
+void execute_path() {
+  turn_left_90(); // Turn left 90 degrees
+  stop_motors();
+  
+  move_forward_by_encoder_count(encoder_count_per_unit_distance * 5); // Move forward 5 units
+  stop_motors();
+  
+  turn_right_90(); // Turn right 90 degrees
+  stop_motors();
+  
+  move_forward_by_encoder_count(encoder_count_per_unit_distance * 5); // Move forward 5 units
+  stop_motors();
+  
+  turn_right_90(); // Turn right 90 degrees
+  stop_motors();
+  
+  move_forward_by_encoder_count(encoder_count_per_unit_distance * 5); // Move forward 5 units
+  stop_motors();
+}
