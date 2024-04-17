@@ -1,0 +1,167 @@
+# record audio from 2 microphones, play it back and plot a spectrogram and time domain plot
+# currenltly this records one microphone after the other, this was funcitonal on my laptop
+# indexes match speaker outputs on my laptop
+
+import numpy as np
+import matplotlib.pyplot as plt
+import pyaudio
+import wave
+from playsound import playsound
+from scipy.io import wavfile
+
+
+#record audio using pyaudio
+
+
+chunk = 1024  # Record in chunks of 1024 samples
+sample_format = pyaudio.paInt16  # 16 bits per sample
+#channels = 2 # right and left
+channels = 1 #monochannel
+fs = 44100  # Record at 44100 samples per second
+seconds = 10
+filename1 = "CruelSummer1.wav"
+filename2 = "CruelSummer2.wav"
+
+p = pyaudio.PyAudio()  # Create an interface to PortAudio
+
+devices = p.get_device_count()
+
+# Iterate through all devices
+for i in range(devices):
+   # Get the device info
+   device_info = p.get_device_info_by_index(i)
+   # Check if this device is a microphone (an input device)
+   if device_info.get('maxInputChannels') > 0:
+      print(f"Microphone: {device_info.get('name')} , Device Index: {device_info.get('index')}")
+
+print('Recording')
+
+stream1 = p.open(format=sample_format,
+                channels=channels,
+                rate=fs,
+                frames_per_buffer=chunk,
+                input=True,
+                input_device_index= 3) #only stream 1 works Microphone: Microphone (USBAudio1.0) , Device Index: 3
+
+
+frames1 = []  # Initialize array to store frames
+
+
+# Store data in chunks for 3 seconds
+for i in range(0, int(fs / chunk * seconds)):
+    data1 = stream1.read(chunk)
+    frames1.append(data1)
+
+
+# Stop and close the stream 
+
+stream1.stop_stream()
+stream1.close()
+print('stream 1 closed')
+
+
+print('stream 2 open and recording')
+
+stream2 = p.open(format=sample_format,
+                channels=channels,
+                rate=fs,
+                frames_per_buffer=chunk,
+                input=True,
+                input_device_index= 1) # index 1 Microphone: Microphone (2- USBAudio1.0) , Device Index: 1 matches speaker output
+frames2 = []
+
+for i in range(0, int(fs / chunk * seconds)):
+    data2 = stream2.read(chunk)
+    frames2.append(data2)
+
+print('stream 2 close')
+stream2.stop_stream()
+stream2.close()
+print('stream 2 closed')
+# Terminate the PortAudio interface
+p.terminate()
+
+
+print('Finished recording')
+
+# Save the recorded data as a WAV file
+wf1 = wave.open(filename1, 'wb') 
+wf1.setnchannels(channels)
+wf1.setsampwidth(p.get_sample_size(sample_format))
+wf1.setframerate(fs)
+wf1.writeframes(b''.join(frames1))
+wf1.close()
+
+# Save the recorded data as a WAV file
+wf2 = wave.open(filename2, 'wb') 
+wf2.setnchannels(channels)
+wf2.setsampwidth(p.get_sample_size(sample_format))
+wf2.setframerate(fs)
+wf2.writeframes(b''.join(frames2))
+wf2.close()
+
+# plot specgram of recroded output
+Fs1, data1 = wavfile.read('CruelSummer1.wav') #wav file returns the sampled frequency (inherent to that wave file), and the data vector
+data1=(np.array(data1, dtype='int64')) #cast data as int64
+
+
+print('sample rate1 {} Hz' .format(Fs1)) #Fs
+length_of_data1 = len(data1)
+N1 = length_of_data1 
+timestep = 1/Fs1 #sample time interval
+print("length of data {}" .format(length_of_data1))
+print(data1)
+time_vector1 =np.linspace(0,(N1-1)*timestep,N1) # for plotting purposes
+
+print('playing recording')
+print(data1.shape) # returns a 2D array(440320,2)
+# leftchannel = data[:,0]
+# rightchannel = data[:,1]
+#playsound('CruelSummer1.wav') # play recording
+
+plt.figure(1)
+plt.specgram(data1, Fs1)  # wants only 1D so I selected the left channel
+plt.title('Spectrogram, Single Channel Output:Taylor Swift Cruel Summer',  
+          fontsize = 14, fontweight ='bold') 
+
+plt.figure(2)
+plt.plot(time_vector1, data1)
+plt.xlabel('Time (s) ')
+plt.ylabel('Amplitude')
+plt.title('Single Channel Output: Taylor Swift Cruel Summer') 
+
+
+
+# # plot specgram2
+Fs2, data2 = wavfile.read('CruelSummer2.wav') #wav file returns the sampled frequency (inherent to that wave file), and the data vector
+data2=(np.array(data2, dtype='int64')) #cast data as int64
+
+
+print('sample rate2 {} Hz' .format(Fs2)) #Fs
+length_of_data2 = len(data2)
+N2 = length_of_data2 
+timestep2 = 1/Fs2 #sample time interval
+print("length of data 2 {}" .format(length_of_data2))
+print(data2)
+time_vector2 =np.linspace(0,(N2-1)*timestep2,N2) # for plotting purposes
+
+print('playing recording2')
+print(data2.shape) # returns a 2D array(440320,2)
+# # leftchannel = data[:,0]
+# # rightchannel = data[:,1]
+# #playsound('CruelSummer2.wav') # play recording
+
+plt.figure(3)
+plt.specgram(data2, Fs2)  # wants only 1D so I selected the left channel
+plt.title('Spectrogram, Single Channel Output:Taylor Swift Cruel Summer2',  
+          fontsize = 14, fontweight ='bold') 
+
+plt.figure(4)
+plt.plot(time_vector2, data2)
+plt.xlabel('Time (s) ')
+plt.ylabel('Amplitude')
+plt.title('Single Channel Output: Taylor Swift Cruel Summer2') 
+
+  
+
+plt.show()
