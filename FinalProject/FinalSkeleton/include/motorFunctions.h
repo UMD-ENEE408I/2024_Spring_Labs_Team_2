@@ -26,6 +26,14 @@ const unsigned int M2_ENC_B = 36;
 
 const unsigned int base_pid = 350;
 
+const bool Right = true;
+const bool Left = false;
+const int turn90R = 250; // Adjust these values based on surface
+const int turn180R = 500;
+const int turn90L = 200;
+const int turn180L = 450;
+
+
 void setupMotors();
 
 void M1_backward(int pwm_value);
@@ -43,6 +51,5 @@ void M2_stop();
 void move_forward(int distance);
 
 void turnConsistent(int distance, bool direction);
-
 
 #endif

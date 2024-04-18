@@ -2,8 +2,6 @@
 #define LINE_FOLLOW
 
 #include "motorFunctions.h"
-// Adc's for line-Follow
-
 
 // PIN Assignments
 const unsigned int ADC_1_CS = 2;
@@ -23,6 +21,8 @@ void digitalConvert();
 LineVal getPosition(float previousPosition);
 
 int lineFollowExit();
+
+
 
 
 #endif
