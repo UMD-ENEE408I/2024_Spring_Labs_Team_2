@@ -17,22 +17,24 @@ uint8_t* readADCConvert() {
   }
 
   for (int i = 0; i < 7; i++) {
-    if (adc1_buf[i]<670) {
+    if (adc1_buf[i]<600) {
       lineArray[2*i] = 1; 
     } else {
       lineArray[2*i] = 0;
     }
 
     if (i<6) {
-      if (adc2_buf[i]<670){
+      if (adc2_buf[i]<600){
         lineArray[2*i+1] = 1;
       } else {
         lineArray[2*i+1] = 0;
       }
-    }
-    
+      //Serial.print(adc2_buf[i]);
+      //Serial.print("  ");
+    } 
   }
-  Serial.println();
+  
+  //Serial.println();
   
   return lineArray;
 }
@@ -67,14 +69,17 @@ int lineFollowExit() {
     float error;
     float last_error;
     float total_error;
+    Serial.println("Following the Line, Inside");
     while (true) {
         LineVal rVal = getPosition(previousPosition);
         // Edge Handling (Reached a Non-Cube Vertex)
         if (rVal.lineValues[0] == 1 && rVal.lineValues[12] == 1) {
-            flag_vertex = 1; // Nvidia Send Signal
-            M1_stop();
-            M2_stop();
-            return 0;
+          flag_vertex = 1; // Nvidia Send Signal
+          M1_stop();
+          M2_stop();
+          delay(500);
+          move_forward(175);
+          return 0;
         }
         // Continouse LineFollow
         if( flag_vertex == 0 ) {
@@ -95,5 +100,8 @@ int lineFollowExit() {
         } 
 
     }
+
+    // 0 signifies edge succesfully reached, no cube encountered.
+    return 0;
 
 }

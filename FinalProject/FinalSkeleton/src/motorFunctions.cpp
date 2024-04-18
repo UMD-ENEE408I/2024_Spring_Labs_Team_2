@@ -1,5 +1,7 @@
 #include "motorFunctions.h"
 
+//Defining Global Encoders
+
 void setupMotors(){
   const int freq = 5000;
   const int resolution = 10;
@@ -49,12 +51,16 @@ void M2_stop() {
   ledcWrite(M2_IN_2_CHANNEL, PWM_VALUE);
 }
 
+
+// Move Forward in Straight-Line, and Consistent Turn PID Control Loops
+
 void move_forward(int distance) {
-  Encoder enc1(M1_ENC_A, M1_ENC_B); 
-  Encoder enc2(M2_ENC_A, M2_ENC_B);
-  long enc1_value = -1; // Initially toggle to -1 for instance in which we want to drive indefinitely
-  long enc2_value = abs(enc2.read());
-  long error = 0;
+  Encoder* enc1 = new Encoder(M1_ENC_A, M1_ENC_B); // Allocate Encoders Manually To Prevent Memory Leak
+  Encoder* enc2 = new Encoder(M2_ENC_A, M2_ENC_B);
+  Serial.println("After Motor Declaration");
+  long enc1_value = -1; // Initialize as -1 to Handle Indefinite Case
+  long enc2_value = abs(enc2->read());
+  long error = 0; // PID Control Values
   long last_error = 0;
   long total_error = 0;
   // Kickstart 100 ms delay
@@ -65,8 +71,8 @@ void move_forward(int distance) {
   float Kd_s =  0.5;
   float Ki_s = 0;
   while(enc1_value<distance) {
-    enc1_value = enc1.read();     
-    enc2_value = abs(enc2.read()); 
+    enc1_value = enc1->read();     
+    enc2_value = abs(enc2->read()); 
     error = enc1_value - enc2_value;
     // With a positive error the left motor is moving faster than the right motor so veering right
     // With a negative error the right motor is moving faster than the left motor so veering left
@@ -84,6 +90,11 @@ void move_forward(int distance) {
   }
   M1_stop();
   M2_stop();
+  // Deallocation to Prevent Memory Leak
+  delete enc1;
+  delete enc2;
+  enc1 = nullptr;
+  enc2 = nullptr;
   delay(500); // Preventing SHA bug
 }
 
@@ -93,15 +104,15 @@ void move_forward(int distance) {
 // 480 ~ 180 Degrees to the right
 // Right = true, left = false, enumerate in .h file
 void turnConsistent(int angle, bool direction) {
-  Encoder enc1(M1_ENC_A, M1_ENC_B); 
-  Encoder enc2(M2_ENC_A, M2_ENC_B);
-  long enc1_value = abs(enc1.read());
-  long enc2_value = abs(enc2.read());
+  Encoder* enc1 = new Encoder(M1_ENC_A, M1_ENC_B);
+  Encoder* enc2 = new Encoder(M2_ENC_A, M2_ENC_B);
+  long enc1_value = abs(enc1->read());
+  long enc2_value = abs(enc2->read());
   long error = 0;
   long last_error = 0;
   long total_error = 0;
   // Kickstart 100 ms delay
-  if (direction) {      // True = Right, False = Left;
+  if (direction) {
     M1_forward(base_pid);
     M2_backward(base_pid);
   } else {
@@ -112,15 +123,16 @@ void turnConsistent(int angle, bool direction) {
   float Kp_s = 1; // Adjust based on whatever surface you are working on 
   float Kd_s =  0.5;
   float Ki_s = 0.05;
-  enc1.write(0);
-  enc2.write(0);
+  enc1->write(0);
+  enc2->write(0);
   while(enc1_value<angle) {
-    enc1_value = abs(enc1.read());     
-    enc2_value = abs(enc2.read()); 
+    enc1_value = abs(enc1->read());     
+    enc2_value = abs(enc2->read()); 
     error = enc1_value - enc2_value;
     int pid_value = Kp_s*error + Kd_s*(error-last_error) + Ki_s*total_error; // Positive Error = right moving faster, Negative = left
     last_error = error;
-    // Motor Adjustments
+    //total_error += error; // questionable about including Ki, Seems to have negative effects
+    // Hence, If error is negative, right motor will decrease, with positive, left motor will decrease
     int right_motor = base_pid + pid_value;
     int left_motor = base_pid - pid_value;
     if (direction) {
@@ -133,6 +145,10 @@ void turnConsistent(int angle, bool direction) {
   }
   M1_stop();
   M2_stop();
+  delete enc1;
+  delete enc2;
+  enc1 = nullptr;
+  enc2 = nullptr;
   delay(500);
   // Delay to prevent Motor Stop SHA pin Bug
 }
