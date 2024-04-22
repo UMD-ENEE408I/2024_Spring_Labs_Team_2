@@ -40,10 +40,6 @@ upper_gray = np.array([179, 1, 255])
 kernel = np.ones((5, 5), np.uint8)
 
 #Image Processing Functions
-# Image Processing Code
-
-# Construct Constants
-# No cube = 0
 
 def detect_colored_cube():
     capture = cv2.VideoCapture(0) # Change 0 On Nvidia To camera Port
