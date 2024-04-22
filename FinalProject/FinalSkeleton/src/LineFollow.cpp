@@ -1,4 +1,5 @@
 #include "LineFollow.h"
+#include "Networking.h"
 Adafruit_MCP3008 adc1;
 Adafruit_MCP3008 adc2;
 
@@ -58,9 +59,10 @@ LineVal getPosition(float previousPosition) {
 
 }
 
-int lineFollowExit() {
+// Definition: Line-Follow PID Control Loop, case = 0 -> Non-Exit Line-folow, 1 -> Detect Colored Block, 2-> Detect Obstruction
+int lineFollowExit(int case_val) {
     float Kp = 20; // 20, 11, 0 at 325 straight on soft surface
-    float Kd = 11;
+    float Kd = 11;  // Move Locals to Global To reduce Memory Strain
     float Ki = 0;
     int flag_vertex = 0;
     float mid = 6.5;
@@ -69,16 +71,30 @@ int lineFollowExit() {
     float error;
     float last_error;
     float total_error;
-    Serial.println("Following the Line, Inside");
+    auto start_time = std::chrono::steady_clock::now();
     while (true) {
         LineVal rVal = getPosition(previousPosition);
+        // Interruption Handling. If case_val = 0, No Interruption, continue to Follow Line until Exit
+        if (case_val > 0) {
+        auto current_time = std::chrono::steady_clock::now();
+        auto elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
+        if (elapsed_time > 1) {  // Process Image Every 1 Second
+          start_time = current_time;
+          int stop_val = sendRecvSingleMessage(case_val); // If Recieved value == 1, BLock Encountered
+          if (stop_val){
+            M1_stop();
+            M2_stop();
+            return 1; // Block Encountered (Maze/Kessel Run)
+          }
+        }
+        }
         // Edge Handling (Reached a Non-Cube Vertex)
         if (rVal.lineValues[0] == 1 && rVal.lineValues[12] == 1) {
           flag_vertex = 1; // Nvidia Send Signal
           M1_stop();
           M2_stop();
           delay(500);
-          move_forward(175);
+          move_forward(175); // 175 ~ Corresponds to 3-4 Inches (Center on Vertex)
           return 0;
         }
         // Continouse LineFollow

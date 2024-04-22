@@ -170,7 +170,7 @@ int traverseEdgeVertex(int nexthop){
     // Orient Facing the next vertex!
     vertexTurn(nexthop);
 
-    if (lineFollowExit()) {      // Attempt to Progress to NextHop
+    if (lineFollowExit(1)) {      // Attempt to Progress to NextHop w/ LineFollowExit(1), 1 = Processed Colored Block Image
         turnConsistent(turn180R,RIGHT);// // Block Encountered, Return to Previous Vertex
         if (orientation == RIGHT) {
             orientation = LEFT;
@@ -181,10 +181,9 @@ int traverseEdgeVertex(int nexthop){
         } else if (orientation == DOWN) {
             orientation = UP;
         }
-        lineFollowExit(); // Return to source node;
+        lineFollowExit(0); // Return to source node witb LineFollowExit(0), 0 = Uninterrupted Line Follow
         return 1;
     } else {
-        
         current_node = nexthop;
     }
     // Arrived at node nexthop

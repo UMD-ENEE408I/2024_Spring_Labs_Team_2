@@ -19,14 +19,17 @@ void setup() {
   // Fundamental Setup Functions for 1. Motors, 2. Linefollow-ADC's, 3. Networking
   setupMotors();
   setupLineFollow();
-  //setupNetworking();
+  setupNetworking();
   delay(2000);
   
 }
 
 void loop() {
 
-  solveMaze();
+  Serial.println("Preparing to Send Message");
+  delay(1000);
+  sendRecvSingleMessage(1);
+  delay(5000);
 
 } 
 
