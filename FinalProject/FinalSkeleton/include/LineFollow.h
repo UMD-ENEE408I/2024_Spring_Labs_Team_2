@@ -2,6 +2,7 @@
 #define LINE_FOLLOW
 
 #include "motorFunctions.h"
+#include <chrono>
 
 // PIN Assignments
 const unsigned int ADC_1_CS = 2;
@@ -20,7 +21,7 @@ void digitalConvert();
 
 LineVal getPosition(float previousPosition);
 
-int lineFollowExit();
+int lineFollowExit(int case_val);
 
 
 
