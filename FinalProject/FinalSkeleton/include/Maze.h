@@ -2,6 +2,7 @@
 #define MAZE
 
 #include "LineFollow.h"
+#include "Networking.h"
 #include <Arduino.h>
 #include <vector>
 #include <queue>
@@ -22,12 +23,13 @@ vector<int> ShortestDistance(vector<vector<int> >& graph,
                            int S, int D, int V);
 
 // Maze Traversal Functions
-void solveMaze();
+void solveMaze(Encoder& enc1, Encoder& enc2);
 
-int traverseEdgeVertex(int nexthop);
+int traverseEdgeVertex(int nexthop, Encoder& enc1, Encoder& enc2);
 
-void traversePath(int destination);
+void traversePath(int destination, Encoder& enc1, Encoder& enc2);
 
+void vertexTurn(int nexthop, Encoder& enc1, Encoder& enc2);
 //void setupMaze();
 
 void print(vector<vector<int>> graph);

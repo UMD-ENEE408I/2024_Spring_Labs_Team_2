@@ -28,9 +28,9 @@ const unsigned int base_pid = 350;
 
 const bool Right = true;
 const bool Left = false;
-const int turn90R = 250; // Adjust these values based on surface
+const int turn90R = 200; // Adjust these values based on surface
 const int turn180R = 500;
-const int turn90L = 200;
+const int turn90L = 150;
 const int turn180L = 450;
 
 
@@ -48,8 +48,8 @@ void M2_forward(int pwm_value);
 
 void M2_stop();
 
-void move_forward(int distance);
+void move_forward(int distance, Encoder& enc1, Encoder& enc2);
 
-void turnConsistent(int distance, bool direction);
+void turnConsistent(int distance, bool direction, Encoder& enc1 , Encoder& enc2);
 
 #endif
