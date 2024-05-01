@@ -1,8 +1,8 @@
  #include "Networking.h"
  #include <string.h>
 
-const char* ssid = "Elink"; // Name of Network
-const char* password = "David!Kristina"; // Network Password
+const char* ssid = "DavidNetwork"; // Name of Network
+const char* password = "Dina!3276"; // Network Password
 
 // Constructs: 
 // When nvida sends Stop signal, Heltec stops recieving
@@ -22,7 +22,7 @@ void setupNetworking() {
     Serial.println(WiFi.localIP());
 
     // Initialize Client/Server Side Connection
-    const char * IPAddress = "192.168.1.155"; // Known Nvidia Ip address 
+    const char * IPAddress = "172.20.10.7"; // Known Nvidia Ip address 
     clientSocket = socket(AF_INET, SOCK_STREAM, 0);   
     sockaddr_in serverAddress; 
     serverAddress.sin_family = AF_INET; 
@@ -39,8 +39,8 @@ int sendRecvSingleMessage(int message){
     // Recieve Single Message
     int recieved_integer = 0;
     int bytes_recieved = recv(clientSocket,&recieved_integer,sizeof(recieved_integer),0);
-    Serial.print("Message Recieved:  ");
-    Serial.println(recieved_integer);
+    //Serial.print("Message Recieved:  ");
+    //Serial.println(recieved_integer);
     return recieved_integer;
 }
 
