@@ -4,6 +4,9 @@
 #include "Networking.h"
 #include "Maze.h"
 #include "SectionFunctions.h"
+
+#define HELTEC_ID = 0
+
 const int RightSignal = 1;
 const int LeftSignal = 2;
 const int StopSignal = 3;
@@ -29,21 +32,20 @@ void loop() {
   Encoder enc2(M2_ENC_A, M2_ENC_B);
   
   while(true){
-    solveMaze(enc1,enc2);
-    delay(5000);
-    //move_forward(500,enc1,enc2);
-    //audioTurn(enc1,enc2);
+    
+    //transitionRight(0,enc1,enc2);
+    //lineFollowExit(2,enc1,enc2);
     /*
+    move_forward_until_interrupt(1,enc1,enc2);
     transitionRight(0,enc1,enc2); // Line of the Republic and Transition into Maze
-    lineFollowExit(1,enc1,enc2); // Position at Node 0 of Maze
+    lineFollowExit(400,1,enc1,enc2); // Position at Node 0 of Maze
     solveMaze(enc1,enc2); // Solve Maze of Mandalore
-
     transitionLeft(0,enc1,enc2); // Transition into Kessel Run 
-    lineFollowExit(0,enc1,enc2); // Kessel Run
+    lineFollowExit(350,0,enc1,enc2); // Kessel Run
 
-    transitionLeft(0,enc1,enc2); // Transition to Hoth Asteroid Field
+    transitionLeft(1,enc1,enc2); // Transition to Hoth Asteroid Field
 
-    lineFollowExit(0,enc1,enc2); // Hoth Asteroid Field
+    lineFollowExit(350,2,enc1,enc2); // Hoth Asteroid Field
 
     transitionRight(1,enc1,enc2); // Transition to Sound Detection
 
@@ -52,11 +54,10 @@ void loop() {
     transitionLeft(0,enc1,enc2); // Transitioning into Endor Dash
     transitionLeft(0,enc1,enc2);
     
-    move_forward_until_interrupt(enc1,enc2); // Endor Dash
+    move_forward_until_interrupt(0,enc1,enc2); // Endor Dash
     
     delay(10000);
     */
-    
 
   }
   

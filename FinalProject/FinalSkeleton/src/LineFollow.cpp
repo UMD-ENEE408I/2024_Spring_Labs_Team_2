@@ -65,43 +65,71 @@ LineVal getPosition(float previousPosition) {
 // case_val: 0 = Continuous Line Follow Until Exit
 // case_val: 1 = Interrupt Line Follow Eery 
 // Definition: Line-Follow PID Control Loop, case = 0 -> Non-Exit Line-folow, 1 -> Detect Colored Block, 2-> Detect Obstruction
-int lineFollowExit(int case_val, Encoder& enc1,Encoder& enc2) {
+int lineFollowExit(int pid, int case_val, Encoder& enc1,Encoder& enc2) {
 
     M1_stop();
     M2_stop();
     float Kp = 20; // 20, 11, 0 at 325 straight on soft surface
-    float Kd = 11;  // Move Locals to Global To reduce Memory Strain
+    float Kd = 10;  // Move Locals to Global To reduce Memory Strain
     float Ki = 0;
     int flag_vertex = 0;
     float mid = 7.5;
-    int base_pid1 = 350;
+    int base_pid1 = pid;
     float previousPosition = 7.5;
     float error = 0.0;
     float last_error = 0.0;
     float total_error = 0.0;
     auto start_time = std::chrono::steady_clock::now();
     auto current_time = std::chrono::steady_clock::now();
+    auto duration = std::chrono::milliseconds(350);
     int rightMVal = 0;
     int leftMVal = 0;
     int pid_valueLF = 0;
-    //Serial.println("Following The Line");
-    std::chrono::seconds interval(1);
     int check = 0;
     while (true) {
         LineVal rVal = getPosition(previousPosition);
-        //current_time = std::chrono::steady_clock::now();
-        //auto duration = std::chrono::duration_cast<std::chrono::seconds>(current_time-start_time);
-        if (check>200){
+        if (check>400){
         if (case_val == 1) {
           if (rVal.lineValues[0] == 1 || rVal.lineValues[12] == 1) {
           //Serial.println("Ending Line Follow");
           flag_vertex = 1; // Nvidia Send Signal
           M1_stop();
           M2_stop();
-          move_forward(185,enc1,enc2); // 175 ~ Corresponds to 3-4 Inches (Center on Vertex)
+          move_forward(200,enc1,enc2); // 175 ~ Corresponds to 3-4 Inches (Center on Vertex)
           return 0;
           }    
-        }  else {
+        } else if (case_val ==2) { // Hoth Asteroid Field Case Handling
+          if (rVal.lineValues[0] == 1 && rVal.lineValues[12] == 1) {
+          flag_vertex = 1; // Nvidia Send Signal
+          M1_stop();
+          M2_stop();
+          delay(500);
+          return 0;
+          }
+          current_time = std::chrono::steady_clock::now();
+          if ((current_time-start_time) > duration ) {
+            M1_stop();
+            M2_stop();
+            int result = sendRecvSingleMessage(2);
+            start_time = std::chrono::steady_clock::now();
+            if (result == 1){
+              turnConsistent(turn90R,Right,enc1,enc2);
+              delay(500);
+              move_forward(400,enc1,enc2);
+              delay(500);
+              turnConsistent(turn90L,Left,enc1,enc2);
+              delay(500);
+              move_forward(1000,enc1,enc2);
+              delay(500);
+              turnConsistent(turn90L+50,Left,enc1,enc2);
+              delay(500);
+              move_forward(500,enc1,enc2);
+              delay(500);
+              turnConsistent(turn90R-50,Right,enc1,enc2); // Re-Catch the Line
+            }
+          }
+          
+        } else {
         if (rVal.lineValues[0] == 1 && rVal.lineValues[12] == 1) {
           flag_vertex = 1; // Nvidia Send Signal
           M1_stop();
@@ -138,7 +166,7 @@ int lineFollowExit(int case_val, Encoder& enc1,Encoder& enc2) {
     return 0;
     }
 
-  void move_forward_until_interrupt(Encoder& enc1, Encoder& enc2) {
+  void move_forward_until_interrupt(int case_val, Encoder& enc1, Encoder& enc2) {
     enc1.readAndReset();
     enc2.readAndReset();
     //Serial.println("After Motor Declaration");
@@ -154,11 +182,18 @@ int lineFollowExit(int case_val, Encoder& enc1,Encoder& enc2) {
     int left_motor = 0;
     while(true) {
       LineVal rVal = getPosition(0);
-      if (rVal.lineValues[0]==1 && rVal.lineValues[12]==1){
+      if (case_val){
+      if (rVal.lineValues[0]==0 || rVal.lineValues[12]==0){
         M1_stop();
         M2_stop();
-        move_forward(500,enc1,enc2); // CAPSTONE COMPLETE
         return;
+      }
+      } else {
+        if (rVal.lineValues[0]==1 && rVal.lineValues[12]==1){
+        M1_stop();
+        M2_stop();
+        return;
+      }
       }
       enc1_value = abs(enc1.read());     
       enc2_value = abs(enc2.read());

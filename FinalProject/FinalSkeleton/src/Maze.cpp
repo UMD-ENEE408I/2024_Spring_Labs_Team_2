@@ -168,7 +168,7 @@ int traverseEdgeVertex(int nexthop, Encoder& enc1, Encoder& enc2){
         return 1;
     } else {
         Serial.println("Traversing Edge");
-        lineFollowExit(1,enc1,enc2);
+        lineFollowExit(360,1,enc1,enc2);
         current_node = nexthop;
     }
   

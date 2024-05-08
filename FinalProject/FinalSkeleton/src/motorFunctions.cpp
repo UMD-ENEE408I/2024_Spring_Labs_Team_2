@@ -134,9 +134,8 @@ void turnConsistent(int angle, bool direction, Encoder& enc1, Encoder& enc2) {
   }
   M1_stop();
   M2_stop();
-  delay(500);
-
   // Delay to prevent Motor Stop SHA pin Bug
+  
 }
 
 
