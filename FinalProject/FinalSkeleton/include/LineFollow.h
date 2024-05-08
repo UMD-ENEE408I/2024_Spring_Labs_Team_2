@@ -12,7 +12,7 @@ struct LineVal {
     uint8_t* lineValues;
     float pos;
 };
-void move_forward_until_interrupt(Encoder& enc1, Encoder &enc2);
+void move_forward_until_interrupt(int case_val,Encoder& enc1, Encoder &enc2);
 
 void setupLineFollow();
 
@@ -22,7 +22,7 @@ void digitalConvert();
 
 LineVal getPosition(float previousPosition);
 
-int lineFollowExit(int case_val, Encoder& enc1, Encoder& enc2);
+int lineFollowExit(int pid, int case_val, Encoder& enc1, Encoder& enc2);
 
 
 
