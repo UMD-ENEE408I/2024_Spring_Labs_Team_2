@@ -3,6 +3,11 @@
 Adafruit_MCP3008 adc1;
 Adafruit_MCP3008 adc2;
 
+float last_error1=0; // global for interruptendor function
+float total_error1=0; //global for interruptendor function
+long previous_time1; // global for interruptendor function
+
+
 void setupLineFollow() {
   adc1.begin(ADC_1_CS);  
   adc2.begin(ADC_2_CS);
@@ -215,4 +220,60 @@ int lineFollowExit(int pid, int case_val, Encoder& enc1,Encoder& enc2) {
     //delay(1000); // Preventing SHA bug
   }
   
+//final straight run
+   void move_forward_until_interrupt_endor(Encoder& enc1, Encoder& enc2) {
+      enc1.readAndReset();
+      enc2.readAndReset(); // why reset?
+      //Serial.println("After Motor Declaration");
+      long enc1_value = abs(enc1.read()); // Initialize as -1 to Handle Indefinite Case
+      long enc2_value = abs(enc2.read());
+      float Kp_s = 10; 
+      float Kd_s =  0; // 1, 0.5, 0  On Operational Heltec
+      float Ki_s = 3;
+      int right_motor = 0;
+      int left_motor = 0;
+      
+      
+  //should these two go into void loop?    
+      while(true) {
+        LineVal rVal = getPosition(0); 
+        if (rVal.lineValues[0]==1 || rVal.lineValues[12]==1){
+          M1_stop();
+          M2_stop();
+          move_forward(500,enc1,enc2); // CAPSTONE COMPLETE
+          return; //.. this is the interrupt to break out of whie loop
+        }
+        enc1_value = abs(enc1.read());     
+        enc2_value = abs(enc2.read());
+        // sendRecvSingleMessage(enc1_value);
+        // sendRecvSingleMessage(enc2_value);
+      // Left - Right
+      // sendRecvSingleMessage(error);
+        // With a positive error the left motor is moving faster than the right motor so veering right
+        // With a negative error the right motor is moving faster than the left motor so veering left
+    
+          long current_time = micros(); //get current time
+          float delta_t = (current_time - previous_time1)/(1.0e6); //convert time to seconds
+          float error = enc1_value - enc2_value;
+          float error_derivative = (error - last_error1)/delta_t;
+          total_error1 = total_error1 + error*delta_t;
+
+          int pid_value = Kp_s*error + Kd_s*error_derivative + Ki_s*total_error1;
+
+          last_error1 = error;
+          previous_time1 = current_time;
+          left_motor =base_pid - pid_value; // Ensure All Robots Have Same Motor Configuration Or Else Divergence Will Occur
+          right_motor = base_pid + pid_value;
+          M1_forward(left_motor); // M1 is Left Motor, M2 is Right Motor, Rename/Recomment
+          M2_forward(right_motor);
+        
+
+    }
+    M1_stop();
+    M2_stop();
+    right_motor = 0;
+    left_motor = 0;
+    //delay(1000); // Preventing SHA bug
+  }
+
 
