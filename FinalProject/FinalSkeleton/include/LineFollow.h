@@ -14,6 +14,9 @@ struct LineVal {
 };
 void move_forward_until_interrupt(int case_val,Encoder& enc1, Encoder &enc2);
 
+void move_forward_until_interrupt_endor(long last_error, long total_error,long previous_time, Encoder& enc1, Encoder& enc2); 
+
+
 void setupLineFollow();
 
 void readADC();
