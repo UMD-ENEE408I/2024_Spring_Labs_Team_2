@@ -1,10 +1,11 @@
 #include "SectionFunctions.h"
 
 
+
 //Defining Global Encoders
 void setupMotors(){
   const int freq = 5000;
-  const int resolution = 10;
+  const int resolution = 8;
   ledcSetup(M1_IN_1_CHANNEL, freq, resolution);
   ledcSetup(M1_IN_2_CHANNEL, freq, resolution);
   ledcSetup(M2_IN_1_CHANNEL, freq, resolution);
@@ -55,6 +56,7 @@ void M2_stop() {
 void move_forward(int distance, Encoder & enc1, Encoder & enc2) {
   enc1.readAndReset();
   enc2.readAndReset();
+  
   long enc1_value = -1; // Initialize as -1 to Handle Indefinite Case
   long enc2_value = abs(enc2.read());
   long error = 0; // PID Control Values
@@ -101,7 +103,10 @@ void turnConsistent(int angle, bool direction, Encoder& enc1, Encoder& enc2) {
   long error = 0;
   long last_error = 0;
   long total_error = 0;
-  int base_pid1 = 375; 
+  int base_pid1;
+  
+    base_pid1 = 100;
+
   // Kickstart 100 ms delay
   if (direction) {
     M1_forward(base_pid1);

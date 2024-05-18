@@ -86,13 +86,19 @@ void vertexTurn(int nexthop, Encoder& enc1, Encoder& enc2) {
         // Turn DOWN
         switch(orientation){
             case RIGHT:
+             delay(250);
             turnConsistent(turn90R,Right, enc1, enc2);
+        
             break;
             case LEFT:
+             delay(250);
             turnConsistent(turn90L,Left, enc1, enc2);
+            
             break;
             case UP:
+             delay(250);
             turnConsistent(turn180R,Right, enc1, enc2);
+            
             break;
             case DOWN:
             //Serial.println("NoTurn");
@@ -105,16 +111,22 @@ void vertexTurn(int nexthop, Encoder& enc1, Encoder& enc2) {
         // Turn Up
         switch(orientation){
                 case RIGHT:
+                 delay(250);
                 turnConsistent(turn90L,Left, enc1, enc2);
+               
                 break;
                 case LEFT:
+                 delay(250);
                 turnConsistent(turn90R,Right, enc1, enc2);
+               
                 break;
                 case UP:
                 //Serial.println("No Turn");
                 break;
                 case DOWN:
+                 delay(250);
                 turnConsistent(turn180R,Right, enc1, enc2);
+                
                 break;
         }
         orientation = UP;
@@ -122,16 +134,22 @@ void vertexTurn(int nexthop, Encoder& enc1, Encoder& enc2) {
     // Turn Left
     switch(orientation){
                 case RIGHT:
+                 delay(250);
                 turnConsistent(turn180R,Right, enc1, enc2);
+                
                 break;
                 case LEFT:
                 //Serial.println("No Turn");
                 break;
                 case UP:
+                 delay(250);
                 turnConsistent(turn90L,Left, enc1, enc2);
+                
                 break;
                 case DOWN:
+                 delay(250);
                 turnConsistent(turn90R,Right, enc1, enc2);
+                
                 break;
         }
         orientation = LEFT;
@@ -143,13 +161,19 @@ void vertexTurn(int nexthop, Encoder& enc1, Encoder& enc2) {
                 //Serial.println("No Turn");
                 break;
                 case LEFT:
+                 delay(250);
                 turnConsistent(turn180R,Right, enc1, enc2);
+                
                 break;
                 case UP:
+                 delay(250);
                 turnConsistent(turn90R,Right, enc1, enc2);
+               
                 break;
                 case DOWN:
+                delay(250);
                 turnConsistent(turn90L,Left, enc1, enc2);
+                
                 break;
         }
         orientation = RIGHT;
@@ -168,7 +192,7 @@ int traverseEdgeVertex(int nexthop, Encoder& enc1, Encoder& enc2){
         return 1;
     } else {
         Serial.println("Traversing Edge");
-        lineFollowExit(360,1,enc1,enc2);
+        lineFollowExit(90,1,enc1,enc2);
         current_node = nexthop;
     }
   
@@ -222,7 +246,7 @@ void traversePath(int destination, vector<vector<int>>& graph, vector<int>& visi
 }
 
 // Definition: 
-void solveMaze(Encoder& enc1, Encoder& enc2){
+void solveMaze(int robot_id, Encoder& enc1, Encoder& enc2){
     vector<vector<int>> graph(V); // Maze Graph
     // Current Maze Visit Strategy: Zig-Zag w/ single robot.
     // Update, Update at Duty Split Below, creating two graphs and splitting search among two robots
@@ -285,7 +309,7 @@ void solveMaze(Encoder& enc1, Encoder& enc2){
     
     orientation = RIGHT;
     current_node = 0; 
-
+    if (robot_id == 1) {
     // While VisitQueue Still Has Elements, Continue to Visit Nodes (Breakout when All Maze Nodes Have Been Visited)
     while ((!visitQueue.empty())) {
         int destination = visitQueue[0];
@@ -300,6 +324,10 @@ void solveMaze(Encoder& enc1, Encoder& enc2){
     }
     vertexTurn(36,enc1,enc2);
     sendRecvSingleMessage(4);
+    } else {
+        traversePath(30,graph,visitQueue, enc1, enc2);
+        vertexTurn(36,enc1,enc2);
+    }
 }
 
 

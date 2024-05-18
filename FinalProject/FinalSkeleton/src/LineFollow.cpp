@@ -3,11 +3,6 @@
 Adafruit_MCP3008 adc1;
 Adafruit_MCP3008 adc2;
 
-float last_error1=0; // global for interruptendor function
-float total_error1=0; //global for interruptendor function
-long previous_time1; // global for interruptendor function
-
-
 void setupLineFollow() {
   adc1.begin(ADC_1_CS);  
   adc2.begin(ADC_2_CS);
@@ -74,19 +69,25 @@ int lineFollowExit(int pid, int case_val, Encoder& enc1,Encoder& enc2) {
 
     M1_stop();
     M2_stop();
-    float Kp = 20; // 20, 11, 0 at 325 straight on soft surface
-    float Kd = 10;  // Move Locals to Global To reduce Memory Strain
+    
+    float Kp = 6; // Current: 6, 100, 0
+    float Kd =100;  // Move Locals to Global To reduce Memory Strain
     float Ki = 0;
+    /*
+    float Kp = 20; // 20, 11, 0 at 325 straight on soft surface // Battery Charge
+    float Kd =11;  // Move Locals to Global To reduce Memory Strain
+    float Ki = 0;
+    */
     int flag_vertex = 0;
-    float mid = 7.5;
+    float mid = 6.5;
     int base_pid1 = pid;
-    float previousPosition = 7.5;
+    float previousPosition = 6.5;
     float error = 0.0;
     float last_error = 0.0;
     float total_error = 0.0;
     auto start_time = std::chrono::steady_clock::now();
     auto current_time = std::chrono::steady_clock::now();
-    auto duration = std::chrono::milliseconds(350);
+    auto duration = std::chrono::milliseconds(250);
     int rightMVal = 0;
     int leftMVal = 0;
     int pid_valueLF = 0;
@@ -100,7 +101,7 @@ int lineFollowExit(int pid, int case_val, Encoder& enc1,Encoder& enc2) {
           flag_vertex = 1; // Nvidia Send Signal
           M1_stop();
           M2_stop();
-          move_forward(200,enc1,enc2); // 175 ~ Corresponds to 3-4 Inches (Center on Vertex)
+          move_forward(200 + 20,enc1,enc2); // 175 ~ Corresponds to 3-4 Inches (Center on Vertex)
           return 0;
           }    
         } else if (case_val ==2) { // Hoth Asteroid Field Case Handling
@@ -124,16 +125,25 @@ int lineFollowExit(int pid, int case_val, Encoder& enc1,Encoder& enc2) {
               delay(500);
               turnConsistent(turn90L,Left,enc1,enc2);
               delay(500);
-              move_forward(1000,enc1,enc2);
+              move_forward(1250,enc1,enc2);
               delay(500);
-              turnConsistent(turn90L+50,Left,enc1,enc2);
+              turnConsistent(turn90L,Left,enc1,enc2);
               delay(500);
               move_forward(500,enc1,enc2);
               delay(500);
-              turnConsistent(turn90R-50,Right,enc1,enc2); // Re-Catch the Line
+              turnConsistent(turn90R,Right,enc1,enc2); // Re-Catch the Line
             }
           }
           
+        } else if (case_val ==3){
+          if (rVal.lineValues[0]== 0 && rVal.lineValues[1]== 0 && rVal.lineValues[2]== 0 && rVal.lineValues[3]== 0 && rVal.lineValues[4]== 0 && rVal.lineValues[6]== 0 && rVal.lineValues[9]== 0 && rVal.lineValues[10]== 0 && rVal.lineValues[11]== 0 && rVal.lineValues[12]== 0 ) {
+          //Serial.println("Ending Line Follow");
+          flag_vertex = 1; // Nvidia Send Signal
+          M1_stop();
+          M2_stop();
+          move_forward_until_interrupt(0,enc1, enc2);
+          return 0;
+          }
         } else {
         if (rVal.lineValues[0] == 1 && rVal.lineValues[12] == 1) {
           flag_vertex = 1; // Nvidia Send Signal
@@ -220,60 +230,4 @@ int lineFollowExit(int pid, int case_val, Encoder& enc1,Encoder& enc2) {
     //delay(1000); // Preventing SHA bug
   }
   
-//final straight run
-   void move_forward_until_interrupt_endor(Encoder& enc1, Encoder& enc2) {
-      enc1.readAndReset();
-      enc2.readAndReset(); // why reset?
-      //Serial.println("After Motor Declaration");
-      long enc1_value = abs(enc1.read()); // Initialize as -1 to Handle Indefinite Case
-      long enc2_value = abs(enc2.read());
-      float Kp_s = 10; 
-      float Kd_s =  0; // 1, 0.5, 0  On Operational Heltec
-      float Ki_s = 3;
-      int right_motor = 0;
-      int left_motor = 0;
-      
-      
-  //should these two go into void loop?    
-      while(true) {
-        LineVal rVal = getPosition(0); 
-        if (rVal.lineValues[0]==1 || rVal.lineValues[12]==1){
-          M1_stop();
-          M2_stop();
-          move_forward(500,enc1,enc2); // CAPSTONE COMPLETE
-          return; //.. this is the interrupt to break out of whie loop
-        }
-        enc1_value = abs(enc1.read());     
-        enc2_value = abs(enc2.read());
-        // sendRecvSingleMessage(enc1_value);
-        // sendRecvSingleMessage(enc2_value);
-      // Left - Right
-      // sendRecvSingleMessage(error);
-        // With a positive error the left motor is moving faster than the right motor so veering right
-        // With a negative error the right motor is moving faster than the left motor so veering left
-    
-          long current_time = micros(); //get current time
-          float delta_t = (current_time - previous_time1)/(1.0e6); //convert time to seconds
-          float error = enc1_value - enc2_value;
-          float error_derivative = (error - last_error1)/delta_t;
-          total_error1 = total_error1 + error*delta_t;
-
-          int pid_value = Kp_s*error + Kd_s*error_derivative + Ki_s*total_error1;
-
-          last_error1 = error;
-          previous_time1 = current_time;
-          left_motor =base_pid - pid_value; // Ensure All Robots Have Same Motor Configuration Or Else Divergence Will Occur
-          right_motor = base_pid + pid_value;
-          M1_forward(left_motor); // M1 is Left Motor, M2 is Right Motor, Rename/Recomment
-          M2_forward(right_motor);
-        
-
-    }
-    M1_stop();
-    M2_stop();
-    right_motor = 0;
-    left_motor = 0;
-    //delay(1000); // Preventing SHA bug
-  }
-
 

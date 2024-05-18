@@ -1,14 +1,22 @@
  #include "Networking.h"
  #include <string.h>
 
+
 const char* ssid = "DavidNetwork"; // Name of Network
 const char* password = "Dina!3276"; // Network Password
+
+//const char* ssid = "Heltec_AP";
+//const char* password = "password";
+
+//const char* ssid = "iPhone"; // Name of Network
+//const char* password = "soccer101"; // Network Password
 
 // Constructs: 
 // When nvida sends Stop signal, Heltec stops recieving
 int clientSocket;
 
-void setupNetworking() {
+void setupNetworking(int HELTEC_ID) {
+    
     // Connecting to Mutual WiFi Network
     WiFi.mode(WIFI_STA); //Optional
     WiFi.begin(ssid, password);
@@ -17,12 +25,30 @@ void setupNetworking() {
         Serial.print(".");
         delay(100);
     }
-    Serial.println("\nConnected to the WiFi network");
-    Serial.print("Local ESP32 IP: ");
-    Serial.println(WiFi.localIP());
+    /*
+    if (HELTEC_ID ==1) {
+        WiFi.softAP(ssid,password);
+        Serial.println("\nConnected to the WiFi network");
+        Serial.print("Local ESP32 IP: ");
+        Serial.println(WiFi.localIP());
+        Serial.print("IP Address:" );
+        Serial.println(WiFi.softAPIP());
+        delay(15000);
+    } else {
+        WiFi.mode(WIFI_STA); //Optional
+        WiFi.begin(ssid, password);
+        Serial.println("\nConnecting");
+        while(WiFi.status() != WL_CONNECTED){
+        Serial.print(".");
+        delay(100);
+    }
+
+    
+    }
+    */
 
     // Initialize Client/Server Side Connection
-    const char * IPAddress = "172.20.10.7"; // Known Nvidia Ip address 
+    const char * IPAddress = "172.20.10.11"; // Known Nvidia Ip address 
     clientSocket = socket(AF_INET, SOCK_STREAM, 0);   
     sockaddr_in serverAddress; 
     serverAddress.sin_family = AF_INET; 
@@ -30,7 +56,6 @@ void setupNetworking() {
     serverAddress.sin_addr.s_addr = inet_addr(IPAddress);
     connect(clientSocket, (struct sockaddr*)&serverAddress, 
             sizeof(serverAddress)); 
-
 } 
 
 int sendRecvSingleMessage(int message){
